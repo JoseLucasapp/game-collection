@@ -2,7 +2,7 @@
 
 Primeiro aplicativo desktop oficial criado com a linguagem Zumbra. Ele mantém uma coleção local de jogos em SQLite, sem conta e sem depender da internet.
 
-## Recursos da versão 0.1.0
+## Recursos da versão 0.1.1
 
 - cadastro de nome, plataforma e franquia;
 - edição e exclusão;

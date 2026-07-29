@@ -5,7 +5,7 @@ import "storage.zum" as storage;
 var application << desktop.app({
     "backend": "auto",
     "name": "Minha Coleção de Jogos",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "identifier": "dev.zumbra.gamecollection",
     "quitOnLastWindow": true,
     "closeOnRequest": true
@@ -20,7 +20,7 @@ var window << application.window({
     "title": "Minha Coleção de Jogos",
     "width": 1080,
     "height": 760,
-    "minWidth": 820,
+    "minWidth": 960,
     "minHeight": 600,
     "resizable": true,
     "highDPI": true
@@ -36,16 +36,40 @@ var darkModeState << ui.boolState(false);
 var statusState << ui.stringState("Coleção carregada");
 var countState << ui.stringState("0 jogos");
 
-var nameInput << ui.input({"id": "game-name", "placeholder": "Nome do jogo", "grow": 1});
-var platformInput << ui.input({"id": "game-platform", "placeholder": "Plataforma, ex.: PlayStation 2", "grow": 1});
-var franchiseInput << ui.input({"id": "game-franchise", "placeholder": "Franquia, ex.: Final Fantasy", "grow": 1});
-var searchInput << ui.input({"id": "game-search", "placeholder": "Buscar por nome, plataforma ou franquia", "grow": 1});
+var nameInput << ui.input({
+    "id": "game-name",
+    "placeholder": "Nome do jogo",
+    "height": 40,
+    "minHeight": 40
+});
+var platformInput << ui.input({
+    "id": "game-platform",
+    "placeholder": "Ex.: PlayStation 2",
+    "height": 40,
+    "minHeight": 40
+});
+var franchiseInput << ui.input({
+    "id": "game-franchise",
+    "placeholder": "Ex.: Final Fantasy",
+    "height": 40,
+    "minHeight": 40
+});
+var searchInput << ui.input({
+    "id": "game-search",
+    "placeholder": "Buscar por nome, plataforma ou franquia",
+    "grow": 1,
+    "height": 40,
+    "minHeight": 40
+});
 var sortSelect << ui.select({
     "id": "game-sort",
     "options": ["Nome A-Z", "Nome Z-A", "Plataforma A-Z", "Franquia A-Z", "Mais recentes"],
     "value": "Nome A-Z",
     "selectedIndex": 0,
-    "minWidth": 180
+    "width": 190,
+    "minWidth": 190,
+    "height": 40,
+    "minHeight": 40
 });
 var darkToggle << ui.checkbox({"id": "dark-mode", "text": "Modo escuro", "checked": false});
 
@@ -66,51 +90,219 @@ var currentGames << storage.list(db, "", "Nome A-Z");
 var editTargets << {};
 var deleteTargets << {};
 
-var root << ui.columnWith({"padding": 20, "gap": 14}, [
-    ui.rowWith({"align": "center", "gap": 12}, [
-        ui.columnWith({"gap": 2, "grow": 1}, [
-            ui.textWith("Minha Coleção de Jogos", {
-                "fontSize": 26,
-                "fontWeight": "bold",
-                "accessibilityLabel": "Título do aplicativo"
-            }),
-            ui.textWith("Cadastre e organize os jogos da sua coleção física e digital.", {"color": "muted"})
-        ]),
-        countText,
-        darkToggle
-    ]),
+var sidebarTitle << ui.containerWith({
+    "height": 34,
+    "minHeight": 34
+}, [
+    ui.textWith("Cadastrar jogo", {
+        "fontSize": 21,
+        "fontWeight": "bold"
+    })
+]);
 
-    ui.containerWith({"border": true, "padding": 14}, [
-        ui.columnWith({"gap": 10}, [
-            ui.textWith("Jogo", {"fontSize": 18, "fontWeight": "bold"}),
-            nameInput,
-            ui.rowWith({"gap": 10}, [platformInput, franchiseInput]),
-            ui.rowWith({"gap": 8, "justify": "end"}, [
-                ui.button("Limpar", fct(event) {
+var sidebarDescription << ui.containerWith({
+    "height": 24,
+    "minHeight": 24
+}, [
+    ui.textWith("Adicione ou edite um item da coleção.", {
+        "fontSize": 12,
+        "color": "muted"
+    })
+]);
+
+var nameLabel << ui.containerWith({
+    "height": 20,
+    "minHeight": 20
+}, [
+    ui.textWith("Nome", {
+        "fontSize": 12,
+        "fontWeight": "bold"
+    })
+]);
+
+var platformLabel << ui.containerWith({
+    "height": 20,
+    "minHeight": 20
+}, [
+    ui.textWith("Plataforma", {
+        "fontSize": 12,
+        "fontWeight": "bold"
+    })
+]);
+
+var franchiseLabelNode << ui.containerWith({
+    "height": 20,
+    "minHeight": 20
+}, [
+    ui.textWith("Franquia", {
+        "fontSize": 12,
+        "fontWeight": "bold"
+    })
+]);
+
+var shortcutsPanel << ui.containerWith({
+    "border": true,
+    "padding": 12,
+    "height": 126,
+    "minHeight": 126
+}, [
+    ui.columnWith({"gap": 6}, [
+        ui.containerWith({"height": 20, "minHeight": 20}, [
+            ui.textWith("Atalhos", {
+                "fontSize": 13,
+                "fontWeight": "bold"
+            })
+        ]),
+        ui.containerWith({"height": 18, "minHeight": 18}, [
+            ui.textWith("Ctrl+N   Novo jogo", {"fontSize": 12})
+        ]),
+        ui.containerWith({"height": 18, "minHeight": 18}, [
+            ui.textWith("Ctrl+S   Salvar", {"fontSize": 12})
+        ]),
+        ui.containerWith({"height": 18, "minHeight": 18}, [
+            ui.textWith("Ctrl+F   Buscar", {"fontSize": 12})
+        ])
+    ])
+]);
+
+var sidebar << ui.containerWith({
+    "id": "collection-sidebar",
+    "border": true,
+    "padding": 20,
+    "width": 340,
+    "minWidth": 340,
+    "maxWidth": 340,
+    "grow": 0
+}, [
+    ui.columnWith({"gap": 8, "grow": 1}, [
+        sidebarTitle,
+        sidebarDescription,
+
+        ui.spacer(4),
+
+        nameLabel,
+        nameInput,
+
+        ui.spacer(4),
+
+        platformLabel,
+        platformInput,
+
+        ui.spacer(4),
+
+        franchiseLabelNode,
+        franchiseInput,
+
+        ui.spacer(6),
+
+        ui.rowWith({
+            "gap": 10,
+            "height": 40,
+            "minHeight": 40
+        }, [
+            ui.buttonWith({
+                "id": "clear-game",
+                "text": "Limpar",
+                "grow": 1,
+                "height": 40,
+                "minHeight": 40,
+                "onClick": fct(event) {
                     event;
                     application.emit({"type": "collection_clear", "data": {}});
-                }),
-                ui.buttonWith({
-                    "id": "save-game",
-                    "text": "Salvar jogo",
-                    "onClick": fct(event) {
-                        event;
-                        application.emit({"type": "collection_save", "data": {}});
-                    },
-                    "accessibilityLabel": "Salvar jogo"
-                })
-            ])
-        ])
+                }
+            }),
+            ui.buttonWith({
+                "id": "save-game",
+                "text": "Salvar jogo",
+                "grow": 1,
+                "height": 40,
+                "minHeight": 40,
+                "onClick": fct(event) {
+                    event;
+                    application.emit({"type": "collection_save", "data": {}});
+                },
+                "accessibilityLabel": "Salvar jogo"
+            })
+        ]),
+
+        ui.spacer(1),
+        shortcutsPanel
+    ])
+]);
+
+var mainTitleRow << ui.rowWith({
+    "align": "center",
+    "gap": 12,
+    "height": 44,
+    "minHeight": 44
+}, [
+    ui.textWith("Minha Coleção de Jogos", {
+        "fontSize": 26,
+        "fontWeight": "bold",
+        "accessibilityLabel": "Título do aplicativo"
+    }),
+    ui.spacer(1),
+    countText,
+    darkToggle
+]);
+
+var mainSubtitle << ui.containerWith({
+    "height": 24,
+    "minHeight": 24
+}, [
+    ui.textWith("Organize os jogos da sua coleção física e digital.", {
+        "fontSize": 13,
+        "color": "muted"
+    })
+]);
+
+var collectionToolbar << ui.rowWith({
+    "gap": 10,
+    "align": "center",
+    "height": 40,
+    "minHeight": 40
+}, [
+    searchInput,
+    sortSelect
+]);
+
+var collectionPanel << ui.columnWith({
+    "id": "collection-content",
+    "gap": 10,
+    "grow": 1
+}, [
+    mainTitleRow,
+    mainSubtitle,
+    collectionToolbar,
+    ui.containerWith({
+        "border": true,
+        "padding": 12,
+        "grow": 1,
+        "minHeight": 420
+    }, [
+        gameList
     ]),
-
-    ui.rowWith({"gap": 10, "align": "center"}, [searchInput, sortSelect]),
-    ui.containerWith({"border": true, "padding": 12, "grow": 1}, [gameList]),
-
-    ui.rowWith({"align": "center", "gap": 8}, [
+    ui.rowWith({
+        "align": "center",
+        "gap": 8,
+        "height": 26,
+        "minHeight": 26
+    }, [
         statusText,
         ui.spacer(1),
-        ui.textWith("Dados locais em SQLite", {"fontSize": 12})
+        ui.textWith("Dados locais em SQLite", {
+            "fontSize": 12,
+            "color": "muted"
+        })
     ])
+]);
+
+var root << ui.rowWith({
+    "padding": 18,
+    "gap": 18
+}, [
+    sidebar,
+    collectionPanel
 ]);
 
 var context << ui.mount(application, window, root, {"theme": ui.theme("light")});
