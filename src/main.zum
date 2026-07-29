@@ -5,7 +5,7 @@ import "storage.zum" as storage;
 var application << desktop.app({
     "backend": "auto",
     "name": "Minha Coleção de Jogos",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "identifier": "dev.zumbra.gamecollection",
     "quitOnLastWindow": true,
     "closeOnRequest": true
@@ -85,7 +85,16 @@ var countText << ui.text("");
 ui.bind(statusText, "text", statusState);
 ui.bind(countText, "text", countState);
 
-var gameList << ui.columnWith({"id": "game-list", "gap": 8, "grow": 1}, []);
+var gameList << ui.columnWith({
+    "id": "game-list",
+    "gap": 8,
+    "grow": 1,
+    "overflowY": "auto",
+    "scrollStep": 88,
+    "scrollbarWidth": 8,
+    "scrollbarGutter": 4,
+    "paddingRight": 12
+}, []);
 var currentGames << storage.list(db, "", "Nome A-Z");
 var editTargets << {};
 var deleteTargets << {};
@@ -278,7 +287,7 @@ var collectionPanel << ui.columnWith({
         "border": true,
         "padding": 12,
         "grow": 1,
-        "minHeight": 420
+        "minHeight": 260
     }, [
         gameList
     ]),
@@ -420,21 +429,50 @@ application.on("collection_refresh", fct(event) {
             franchiseLabel << "Sem franquia";
         }
 
-        ui.add(gameList, ui.containerWith({"id": rowId, "border": true, "padding": 12}, [
-            ui.rowWith({"gap": 12, "align": "center"}, [
-                ui.columnWith({"gap": 3, "grow": 1}, [
-                    ui.textWith(game["name"], {"fontSize": 17, "fontWeight": "bold"}),
-                    ui.text(game["platform"] + " • " + franchiseLabel)
+        ui.add(gameList, ui.containerWith({
+            "id": rowId,
+            "border": true,
+            "padding": 10,
+            "height": 80,
+            "minHeight": 80
+        }, [
+            ui.rowWith({
+                "gap": 10,
+                "align": "center",
+                "height": 60,
+                "minHeight": 60
+            }, [
+                ui.columnWith({
+                    "gap": 3,
+                    "grow": 1,
+                    "justify": "center"
+                }, [
+                    ui.textWith(game["name"], {
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                    }),
+                    ui.textWith(game["platform"] + " • " + franchiseLabel, {
+                        "fontSize": 13,
+                        "color": "muted"
+                    })
                 ]),
                 ui.buttonWith({
                     "id": editId,
                     "text": "Editar",
+                    "width": 74,
+                    "minWidth": 74,
+                    "height": 36,
+                    "minHeight": 36,
                     "onClick": editGame,
                     "accessibilityLabel": "Editar " + game["name"]
                 }),
                 ui.buttonWith({
                     "id": deleteId,
                     "text": "Excluir",
+                    "width": 74,
+                    "minWidth": 74,
+                    "height": 36,
+                    "minHeight": 36,
                     "danger": true,
                     "onClick": deleteGame,
                     "accessibilityLabel": "Excluir " + game["name"]
