@@ -9,6 +9,7 @@ trap 'rm -rf "$TMP"' EXIT
 "$ZUMBRA_BIN" check src/main.zum
 "$ZUMBRA_BIN" check tests/storage_test.zum
 "$ZUMBRA_BIN" check tests/ui_event_test.zum
+"$ZUMBRA_BIN" check tests/layout_test.zum
 
 STORAGE_OUTPUT="$("$ZUMBRA_BIN" run tests/storage_test.zum)"
 STORAGE_EXPECTED=$'3\nChrono Trigger\nFinal Fantasy IX\nHalo 3\nHalo 3\nPC\nChrono\nHalo 3\n1\nFinal Fantasy IX\nHalo 3\nSteam\n2\ntrue'
@@ -21,6 +22,13 @@ UI_OUTPUT="$("$ZUMBRA_BIN" run tests/ui_event_test.zum)"
 UI_EXPECTED=$'edit-game-7\nbutton'
 if [[ "$UI_OUTPUT" != "$UI_EXPECTED" ]]; then
   printf 'Unexpected UI event test output:\n%s\n' "$UI_OUTPUT" >&2
+  exit 1
+fi
+
+LAYOUT_OUTPUT="$("$ZUMBRA_BIN" run tests/layout_test.zum)"
+LAYOUT_EXPECTED=$'72\n12\n36\n16'
+if [[ "$LAYOUT_OUTPUT" != "$LAYOUT_EXPECTED" ]]; then
+  printf 'Unexpected layout test output:\n%s\n' "$LAYOUT_OUTPUT" >&2
   exit 1
 fi
 

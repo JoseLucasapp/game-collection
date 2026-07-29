@@ -5,7 +5,7 @@ import "storage.zum" as storage;
 var application << desktop.app({
     "backend": "auto",
     "name": "Minha Coleção de Jogos",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "identifier": "dev.zumbra.gamecollection",
     "quitOnLastWindow": true,
     "closeOnRequest": true
@@ -90,7 +90,7 @@ var gameList << ui.columnWith({
     "gap": 8,
     "grow": 1,
     "overflowY": "auto",
-    "scrollStep": 88,
+    "scrollStep": 80,
     "scrollbarWidth": 8,
     "scrollbarGutter": 4,
     "paddingRight": 12
@@ -432,9 +432,12 @@ application.on("collection_refresh", fct(event) {
         ui.add(gameList, ui.containerWith({
             "id": rowId,
             "border": true,
-            "padding": 10,
-            "height": 80,
-            "minHeight": 80
+            "paddingLeft": 10,
+            "paddingRight": 10,
+            "paddingTop": 4,
+            "paddingBottom": 8,
+            "height": 72,
+            "minHeight": 72
         }, [
             ui.rowWith({
                 "gap": 10,
@@ -443,17 +446,23 @@ application.on("collection_refresh", fct(event) {
                 "minHeight": 60
             }, [
                 ui.columnWith({
-                    "gap": 3,
+                    "gap": 0,
                     "grow": 1,
-                    "justify": "center"
+                    "height": 44,
+                    "minHeight": 44,
+                    "justify": "start"
                 }, [
                     ui.textWith(game["name"], {
                         "fontSize": 17,
-                        "fontWeight": "bold"
+                        "fontWeight": "bold",
+                        "height": 24,
+                        "minHeight": 24
                     }),
                     ui.textWith(game["platform"] + " • " + franchiseLabel, {
                         "fontSize": 13,
-                        "color": "muted"
+                        "color": "muted",
+                        "height": 20,
+                        "minHeight": 20
                     })
                 ]),
                 ui.buttonWith({

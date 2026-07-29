@@ -1,8 +1,12 @@
 # Minha Coleção de Jogos
 
+<img src='./assets/pic.png' width='400' align='center'/>
+<br/>
+<br/>
+
 Primeiro aplicativo desktop oficial criado com a linguagem Zumbra. Ele mantém uma coleção local de jogos em SQLite, sem conta e sem depender da internet.
 
-## Recursos da versão 0.1.2
+## Recursos da versão 0.1.3
 
 - cadastro de nome, plataforma e franquia;
 - edição e exclusão;
@@ -12,12 +16,12 @@ Primeiro aplicativo desktop oficial criado com a linguagem Zumbra. Ele mantém u
 - persistência local em SQLite;
 - atalhos de teclado;
 - distribuição pelo Zumbra para Linux, Windows e macOS;
-- cards com altura estável e ações alinhadas;
+- cards compactos, com altura estável e ações alinhadas;
 - listagem com rolagem interna, sem ultrapassar a área principal.
 
 ## Requisitos
 
-- Zumbra 0.11.2 ou superior;
+- Zumbra 0.11.3 ou superior;
 - SQLite 3;
 - SDL3 e SDL3_ttf para a interface gráfica.
 
