@@ -1,0 +1,74 @@
+import "../vendor/zumbra/std/database.zum" as database;
+
+pub fct open(path) {
+    var db << database.open(path);
+    database.migrate(db, [
+        {
+            "version": 1,
+            "name": "games",
+            "sql": "CREATE TABLE games (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, platform TEXT NOT NULL, franchise TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+        }
+    ]);
+    db;
+}
+
+pub fct create(db, name, platform, franchise) {
+    database.exec(
+        db,
+        "INSERT INTO games(name, platform, franchise) VALUES (:name, :platform, :franchise)",
+        {"name": name, "platform": platform, "franchise": franchise}
+    );
+}
+
+pub fct update(db, id, name, platform, franchise) {
+    database.exec(
+        db,
+        "UPDATE games SET name = :name, platform = :platform, franchise = :franchise, updated_at = CURRENT_TIMESTAMP WHERE id = :id",
+        {"id": id, "name": name, "platform": platform, "franchise": franchise}
+    );
+}
+
+pub fct remove(db, id) {
+    database.exec(db, "DELETE FROM games WHERE id = :id", {"id": id});
+}
+
+pub fct find(db, id) {
+    database.queryOne(
+        db,
+        "SELECT id, name, platform, franchise, created_at, updated_at FROM games WHERE id = :id",
+        {"id": id}
+    );
+}
+
+pub fct list(db, search, sortMode) {
+    var orderBy << "name COLLATE NOCASE ASC, id ASC";
+
+    if (sortMode == "Nome Z-A") {
+        orderBy << "name COLLATE NOCASE DESC, id DESC";
+    }
+    if (sortMode == "Plataforma A-Z") {
+        orderBy << "platform COLLATE NOCASE ASC, name COLLATE NOCASE ASC";
+    }
+    if (sortMode == "Franquia A-Z") {
+        orderBy << "franchise COLLATE NOCASE ASC, name COLLATE NOCASE ASC";
+    }
+    if (sortMode == "Mais recentes") {
+        orderBy << "id DESC";
+    }
+
+    var pattern << "%" + search + "%";
+    database.query(
+        db,
+        "SELECT id, name, platform, franchise, created_at, updated_at FROM games WHERE :search = '' OR name LIKE :pattern COLLATE NOCASE OR platform LIKE :pattern COLLATE NOCASE OR franchise LIKE :pattern COLLATE NOCASE ORDER BY " + orderBy,
+        {"search": search, "pattern": pattern}
+    );
+}
+
+pub fct count(db) {
+    var row << database.queryOne(db, "SELECT COUNT(*) AS total FROM games", {});
+    row["total"];
+}
+
+pub fct close(db) {
+    database.close(db);
+}

@@ -1,0 +1,28 @@
+import "../vendor/zumbra/std/desktop.zum" as desktop;
+import "../vendor/zumbra/std/ui.zum" as ui;
+
+var application << desktop.app({"backend": "headless", "quitOnLastWindow": false});
+var window << application.window({"title": "UI event test", "width": 320, "height": 180});
+var selectedTarget << "";
+var selectedKind << "";
+
+var clickHandler << fct(event) {
+    selectedTarget << event["targetId"];
+    selectedKind << event["targetKind"];
+};
+
+var button << ui.buttonWith({
+    "id": "edit-game-7",
+    "text": "Editar",
+    "onClick": clickHandler
+});
+var root << ui.columnWith({"padding": 8}, [button]);
+var context << ui.mount(application, window, root, {});
+
+ui.dispatch(context, {"type": "mouse_down", "x": 12, "y": 12});
+ui.dispatch(context, {"type": "mouse_up", "x": 12, "y": 12});
+
+show(selectedTarget);
+show(selectedKind);
+context.close();
+application.close();

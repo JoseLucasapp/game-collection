@@ -1,0 +1,40 @@
+[app]
+name = "Minha Coleção de Jogos"
+version = "0.1.0"
+identifier = "dev.zumbra.gamecollection"
+entry = "src/main.zum"
+icon = "assets/icon.png"
+icon_linux = "assets/icon.png"
+icon_windows = "assets/icon.ico"
+icon_macos = "assets/icon.icns"
+
+[build]
+output = "dist/zumbra-game-collection"
+compiler = "auto"
+release = true
+
+[package]
+description = "Aplicativo local para cadastrar e organizar uma coleção de jogos."
+publisher = "José Lucas Gonçalves Freitas"
+homepage = "https://github.com/JoseLucasapp/Zumbra-lang"
+license = "Apache-2.0"
+category = "Game"
+copyright = "Copyright José Lucas Gonçalves Freitas"
+
+[linux]
+dependencies = ["libc6", "libsqlite3-0"]
+recommends = ["libsdl3-0", "libsdl3-ttf0"]
+
+[windows]
+console = false
+installer = "nsis"
+
+[macos]
+minimum_version = "12.0"
+category = "public.app-category.entertainment"
+
+[assets]
+include = ["assets/**"]
+exclude = ["**/*.tmp"]
+max_file_bytes = 16777216
+max_total_bytes = 67108864

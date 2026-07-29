@@ -1,0 +1,289 @@
+import "../vendor/zumbra/std/desktop.zum" as desktop;
+import "../vendor/zumbra/std/ui.zum" as ui;
+import "storage.zum" as storage;
+
+var application << desktop.app({
+    "backend": "auto",
+    "name": "Minha Coleção de Jogos",
+    "version": "0.1.0",
+    "identifier": "dev.zumbra.gamecollection",
+    "quitOnLastWindow": true,
+    "closeOnRequest": true
+});
+
+var paths << application.paths();
+var databasePath << paths["data"] + "/zumbra-game-collection.sqlite";
+var db << storage.open(databasePath);
+var headlessMode << application.backend() == "headless";
+
+var window << application.window({
+    "title": "Minha Coleção de Jogos",
+    "width": 1080,
+    "height": 760,
+    "minWidth": 820,
+    "minHeight": 600,
+    "resizable": true,
+    "highDPI": true
+});
+
+var editingId << ui.intState(0);
+var nameState << ui.stringState("");
+var platformState << ui.stringState("");
+var franchiseState << ui.stringState("");
+var searchState << ui.stringState("");
+var sortState << ui.stringState("Nome A-Z");
+var darkModeState << ui.boolState(false);
+var statusState << ui.stringState("Coleção carregada");
+var countState << ui.stringState("0 jogos");
+
+var nameInput << ui.input({"id": "game-name", "placeholder": "Nome do jogo", "grow": 1});
+var platformInput << ui.input({"id": "game-platform", "placeholder": "Plataforma, ex.: PlayStation 2", "grow": 1});
+var franchiseInput << ui.input({"id": "game-franchise", "placeholder": "Franquia, ex.: Final Fantasy", "grow": 1});
+var searchInput << ui.input({"id": "game-search", "placeholder": "Buscar por nome, plataforma ou franquia", "grow": 1});
+var sortSelect << ui.select({
+    "id": "game-sort",
+    "options": ["Nome A-Z", "Nome Z-A", "Plataforma A-Z", "Franquia A-Z", "Mais recentes"],
+    "value": "Nome A-Z",
+    "selectedIndex": 0,
+    "minWidth": 180
+});
+var darkToggle << ui.checkbox({"id": "dark-mode", "text": "Modo escuro", "checked": false});
+
+ui.bind(nameInput, "value", nameState);
+ui.bind(platformInput, "value", platformState);
+ui.bind(franchiseInput, "value", franchiseState);
+ui.bind(searchInput, "value", searchState);
+ui.bind(sortSelect, "value", sortState);
+ui.bind(darkToggle, "checked", darkModeState);
+
+var statusText << ui.text("");
+var countText << ui.text("");
+ui.bind(statusText, "text", statusState);
+ui.bind(countText, "text", countState);
+
+var gameList << ui.columnWith({"id": "game-list", "gap": 8, "grow": 1}, []);
+var currentGames << storage.list(db, "", "Nome A-Z");
+var editTargets << {};
+var deleteTargets << {};
+
+var root << ui.columnWith({"padding": 20, "gap": 14}, [
+    ui.rowWith({"align": "center", "gap": 12}, [
+        ui.columnWith({"gap": 2, "grow": 1}, [
+            ui.textWith("Minha Coleção de Jogos", {
+                "fontSize": 26,
+                "fontWeight": "bold",
+                "accessibilityLabel": "Título do aplicativo"
+            }),
+            ui.textWith("Cadastre e organize os jogos da sua coleção física e digital.", {"color": "muted"})
+        ]),
+        countText,
+        darkToggle
+    ]),
+
+    ui.containerWith({"border": true, "padding": 14}, [
+        ui.columnWith({"gap": 10}, [
+            ui.textWith("Jogo", {"fontSize": 18, "fontWeight": "bold"}),
+            nameInput,
+            ui.rowWith({"gap": 10}, [platformInput, franchiseInput]),
+            ui.rowWith({"gap": 8, "justify": "end"}, [
+                ui.button("Limpar", fct(event) {
+                    event;
+                    application.emit({"type": "collection_clear", "data": {}});
+                }),
+                ui.buttonWith({
+                    "id": "save-game",
+                    "text": "Salvar jogo",
+                    "onClick": fct(event) {
+                        event;
+                        application.emit({"type": "collection_save", "data": {}});
+                    },
+                    "accessibilityLabel": "Salvar jogo"
+                })
+            ])
+        ])
+    ]),
+
+    ui.rowWith({"gap": 10, "align": "center"}, [searchInput, sortSelect]),
+    ui.containerWith({"border": true, "padding": 12, "grow": 1}, [gameList]),
+
+    ui.rowWith({"align": "center", "gap": 8}, [
+        statusText,
+        ui.spacer(1),
+        ui.textWith("Dados locais em SQLite", {"fontSize": 12})
+    ])
+]);
+
+var context << ui.mount(application, window, root, {"theme": ui.theme("light")});
+
+var clearForm << fct() {
+    editingId.set(0);
+    nameState.set("");
+    platformState.set("");
+    franchiseState.set("");
+    statusState.set("Novo jogo");
+    context.focus(nameInput);
+};
+
+var requestRefresh << fct() {
+    application.emit({"type": "collection_refresh", "data": {}});
+};
+
+var saveGame << fct() {
+    var name << nameState.get();
+    var platform << platformState.get();
+    var franchise << franchiseState.get();
+    var currentId << editingId.get();
+
+    if (sizeOf(name) == 0) {
+        statusState.set("Informe o nome do jogo");
+        context.focus(nameInput);
+        return false;
+    }
+    if (sizeOf(platform) == 0) {
+        statusState.set("Informe a plataforma");
+        context.focus(platformInput);
+        return false;
+    }
+
+    if (currentId > 0) {
+        storage.update(db, currentId, name, platform, franchise);
+        statusState.set("Jogo atualizado");
+    } else {
+        storage.create(db, name, platform, franchise);
+        statusState.set("Jogo adicionado à coleção");
+    }
+
+    editingId.set(0);
+    nameState.set("");
+    platformState.set("");
+    franchiseState.set("");
+    requestRefresh();
+    true;
+};
+
+var editGame << fct(event) {
+    var targetId << event["targetId"];
+    var game << editTargets[targetId];
+    editingId.set(game["id"]);
+    nameState.set(game["name"]);
+    platformState.set(game["platform"]);
+    franchiseState.set(game["franchise"]);
+    statusState.set("Editando " + game["name"]);
+    context.focus(nameInput);
+};
+
+var deleteGame << fct(event) {
+    var targetId << event["targetId"];
+    var game << deleteTargets[targetId];
+    storage.remove(db, game["id"]);
+    statusState.set(game["name"] + " removido da coleção");
+    if (editingId.get() == game["id"]) {
+        clearForm();
+    }
+    requestRefresh();
+};
+
+application.on("collection_clear", fct(event) {
+    event;
+    clearForm();
+});
+
+application.on("collection_save", fct(event) {
+    event;
+    saveGame();
+});
+
+application.on("collection_refresh", fct(event) {
+    event;
+
+    ui.remove(gameList, "collection-empty");
+    for oldGame in currentGames {
+        ui.remove(gameList, "game-row-" + toString(oldGame["id"]));
+    }
+
+    currentGames << storage.list(db, searchState.get(), sortState.get());
+    editTargets << {};
+    deleteTargets << {};
+    countState.set(toString(sizeOf(currentGames)) + " jogos");
+
+    if (sizeOf(currentGames) == 0) {
+        ui.add(gameList, ui.containerWith({
+            "id": "collection-empty",
+            "padding": 18,
+            "align": "center"
+        }, [ui.text("Nenhum jogo encontrado. Adicione o primeiro item da coleção.")]));
+    }
+
+    for game in currentGames {
+        var gameId << game["id"];
+        var rowId << "game-row-" + toString(gameId);
+        var editId << "edit-game-" + toString(gameId);
+        var deleteId << "delete-game-" + toString(gameId);
+        var franchiseLabel << game["franchise"];
+
+        editTargets[editId] << game;
+        deleteTargets[deleteId] << game;
+
+        if (sizeOf(franchiseLabel) == 0) {
+            franchiseLabel << "Sem franquia";
+        }
+
+        ui.add(gameList, ui.containerWith({"id": rowId, "border": true, "padding": 12}, [
+            ui.rowWith({"gap": 12, "align": "center"}, [
+                ui.columnWith({"gap": 3, "grow": 1}, [
+                    ui.textWith(game["name"], {"fontSize": 17, "fontWeight": "bold"}),
+                    ui.text(game["platform"] + " • " + franchiseLabel)
+                ]),
+                ui.buttonWith({
+                    "id": editId,
+                    "text": "Editar",
+                    "onClick": editGame,
+                    "accessibilityLabel": "Editar " + game["name"]
+                }),
+                ui.buttonWith({
+                    "id": deleteId,
+                    "text": "Excluir",
+                    "danger": true,
+                    "onClick": deleteGame,
+                    "accessibilityLabel": "Excluir " + game["name"]
+                })
+            ])
+        ]));
+    }
+
+    if (headlessMode) {
+        show("collection-ready");
+        show(storage.count(db));
+        application.quit();
+    }
+});
+
+searchState.subscribe(fct(value) {
+    value;
+    requestRefresh();
+});
+sortState.subscribe(fct(value) {
+    value;
+    requestRefresh();
+});
+darkModeState.subscribe(fct(enabled) {
+    if (enabled) {
+        context.setTheme(ui.theme("dark"));
+    } else {
+        context.setTheme(ui.theme("light"));
+    }
+});
+
+application.shortcut("Ctrl+N", fct(event) { event; clearForm(); });
+application.shortcut("Ctrl+S", fct(event) { event; saveGame(); });
+application.shortcut("Ctrl+F", fct(event) { event; context.focus(searchInput); });
+application.shortcut("Ctrl+Q", fct(event) { event; application.quit(); });
+application.shortcut("Tab", fct(event) { event; context.focusNext(false); });
+
+requestRefresh();
+window.show();
+application.run();
+
+storage.close(db);
+context.close();
+application.close();

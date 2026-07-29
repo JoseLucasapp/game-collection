@@ -1,0 +1,31 @@
+import "../src/storage.zum" as storage;
+
+var db << storage.open(":memory:");
+
+storage.create(db, "Final Fantasy IX", "PlayStation", "Final Fantasy");
+storage.create(db, "Chrono Trigger", "PC", "Chrono");
+storage.create(db, "Halo 3", "Xbox 360", "Halo");
+
+var byName << storage.list(db, "", "Nome A-Z");
+show(sizeOf(byName));
+show(byName[0]["name"]);
+show(byName[1]["name"]);
+show(byName[2]["name"]);
+
+show(storage.list(db, "", "Nome Z-A")[0]["name"]);
+show(storage.list(db, "", "Plataforma A-Z")[0]["platform"]);
+show(storage.list(db, "", "Franquia A-Z")[0]["franchise"]);
+show(storage.list(db, "", "Mais recentes")[0]["name"]);
+
+var finalGames << storage.list(db, "final", "Nome A-Z");
+show(sizeOf(finalGames));
+show(finalGames[0]["name"]);
+show(storage.list(db, "xbox", "Nome A-Z")[0]["name"]);
+
+var chronoId << byName[0]["id"];
+storage.update(db, chronoId, "Chrono Trigger", "Steam", "Chrono");
+show(storage.find(db, chronoId)["platform"]);
+
+storage.remove(db, chronoId);
+show(storage.count(db));
+show(storage.close(db));

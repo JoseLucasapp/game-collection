@@ -1,0 +1,16 @@
+/build/
+/dist/
+/out/
+/release/
+/tools/
+/tmp/
+*.sqlite
+*.sqlite3
+*.db
+*.AppImage
+*.deb
+*.exe
+*.dll
+*.dylib
+*.so
+coverage.out
