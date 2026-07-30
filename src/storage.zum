@@ -1,30 +1,56 @@
 import "../vendor/zumbra/std/database.zum" as database;
 
-pub fct open(path) {
-    var db << database.open(path);
-    database.migrate(db, [
+fct migrations() {
+    [
         {
             "version": 1,
             "name": "games",
             "sql": "CREATE TABLE games (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, platform TEXT NOT NULL, franchise TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+        },
+        {
+            "version": 2,
+            "name": "game_details_and_indexes",
+            "sql": "ALTER TABLE games ADD COLUMN region TEXT NOT NULL DEFAULT ''; ALTER TABLE games ADD COLUMN media TEXT NOT NULL DEFAULT ''; ALTER TABLE games ADD COLUMN condition TEXT NOT NULL DEFAULT ''; ALTER TABLE games ADD COLUMN cover_path TEXT NOT NULL DEFAULT ''; CREATE INDEX idx_games_name ON games(name COLLATE NOCASE); CREATE INDEX idx_games_platform ON games(platform COLLATE NOCASE); CREATE INDEX idx_games_franchise ON games(franchise COLLATE NOCASE);"
         }
-    ]);
+    ];
+}
+
+pub fct open(path) {
+    var db << database.open(path);
+    database.migrate(db, migrations());
     db;
 }
 
-pub fct create(db, name, platform, franchise) {
+pub fct create(db, game) {
     database.exec(
         db,
-        "INSERT INTO games(name, platform, franchise) VALUES (:name, :platform, :franchise)",
-        {"name": name, "platform": platform, "franchise": franchise}
+        "INSERT INTO games(name, platform, franchise, region, media, condition, cover_path) VALUES (:name, :platform, :franchise, :region, :media, :condition, :cover_path)",
+        {
+            "name": game["name"],
+            "platform": game["platform"],
+            "franchise": game["franchise"],
+            "region": game["region"],
+            "media": game["media"],
+            "condition": game["condition"],
+            "cover_path": game["cover_path"]
+        }
     );
 }
 
-pub fct update(db, id, name, platform, franchise) {
+pub fct update(db, id, game) {
     database.exec(
         db,
-        "UPDATE games SET name = :name, platform = :platform, franchise = :franchise, updated_at = CURRENT_TIMESTAMP WHERE id = :id",
-        {"id": id, "name": name, "platform": platform, "franchise": franchise}
+        "UPDATE games SET name = :name, platform = :platform, franchise = :franchise, region = :region, media = :media, condition = :condition, cover_path = :cover_path, updated_at = CURRENT_TIMESTAMP WHERE id = :id",
+        {
+            "id": id,
+            "name": game["name"],
+            "platform": game["platform"],
+            "franchise": game["franchise"],
+            "region": game["region"],
+            "media": game["media"],
+            "condition": game["condition"],
+            "cover_path": game["cover_path"]
+        }
     );
 }
 
@@ -35,14 +61,13 @@ pub fct remove(db, id) {
 pub fct find(db, id) {
     database.queryOne(
         db,
-        "SELECT id, name, platform, franchise, created_at, updated_at FROM games WHERE id = :id",
+        "SELECT id, name, platform, franchise, region, media, condition, cover_path, created_at, updated_at FROM games WHERE id = :id",
         {"id": id}
     );
 }
 
-pub fct list(db, search, sortMode) {
+fct orderExpression(sortMode) {
     var orderBy << "name COLLATE NOCASE ASC, id ASC";
-
     if (sortMode == "Nome Z-A") {
         orderBy << "name COLLATE NOCASE DESC, id DESC";
     }
@@ -55,18 +80,105 @@ pub fct list(db, search, sortMode) {
     if (sortMode == "Mais recentes") {
         orderBy << "id DESC";
     }
+    orderBy;
+}
 
+pub fct list(db, search, sortMode, platformFilter, franchiseFilter) {
     var pattern << "%" + search + "%";
     database.query(
         db,
-        "SELECT id, name, platform, franchise, created_at, updated_at FROM games WHERE :search = '' OR name LIKE :pattern COLLATE NOCASE OR platform LIKE :pattern COLLATE NOCASE OR franchise LIKE :pattern COLLATE NOCASE ORDER BY " + orderBy,
-        {"search": search, "pattern": pattern}
+        "SELECT id, name, platform, franchise, region, media, condition, cover_path, created_at, updated_at FROM games WHERE (:search = '' OR name LIKE :pattern COLLATE NOCASE OR platform LIKE :pattern COLLATE NOCASE OR franchise LIKE :pattern COLLATE NOCASE OR region LIKE :pattern COLLATE NOCASE OR media LIKE :pattern COLLATE NOCASE OR condition LIKE :pattern COLLATE NOCASE) AND (:platform = '' OR platform = :platform COLLATE NOCASE) AND (:franchise = '' OR franchise = :franchise COLLATE NOCASE) ORDER BY " + orderExpression(sortMode),
+        {
+            "search": search,
+            "pattern": pattern,
+            "platform": platformFilter,
+            "franchise": franchiseFilter
+        }
     );
+}
+
+pub fct all(db) {
+    database.query(
+        db,
+        "SELECT id, name, platform, franchise, region, media, condition, cover_path, created_at, updated_at FROM games ORDER BY id ASC",
+        {}
+    );
+}
+
+fct distinctValues(db, columnName) {
+    var rows << database.query(
+        db,
+        "SELECT DISTINCT " + columnName + " AS value FROM games WHERE " + columnName + " <> '' ORDER BY " + columnName + " COLLATE NOCASE ASC",
+        {}
+    );
+    var values << [];
+    for row in rows {
+        addToArrayEnd(values, row["value"]);
+    }
+    values;
+}
+
+pub fct platforms(db) {
+    distinctValues(db, "platform");
+}
+
+pub fct franchises(db) {
+    distinctValues(db, "franchise");
 }
 
 pub fct count(db) {
     var row << database.queryOne(db, "SELECT COUNT(*) AS total FROM games", {});
     row["total"];
+}
+
+pub fct isDuplicate(db, game) {
+    var row << database.queryOne(
+        db,
+        "SELECT COUNT(*) AS total FROM games WHERE name = :name COLLATE NOCASE AND platform = :platform COLLATE NOCASE AND region = :region COLLATE NOCASE",
+        {"name": game["name"], "platform": game["platform"], "region": game["region"]}
+    );
+    row["total"] > 0;
+}
+
+pub fct importOne(db, game) {
+    if (isDuplicate(db, game)) {
+        return false;
+    }
+    create(db, game);
+    true;
+}
+
+pub fct stats(db) {
+    var summary << database.queryOne(
+        db,
+        "SELECT COUNT(*) AS total, COUNT(DISTINCT platform) AS platforms, COUNT(DISTINCT NULLIF(franchise, '')) AS franchises, COALESCE(SUM(CASE WHEN media = 'Física' THEN 1 ELSE 0 END), 0) AS physical, COALESCE(SUM(CASE WHEN media = 'Digital' THEN 1 ELSE 0 END), 0) AS digital, COALESCE(SUM(CASE WHEN cover_path <> '' THEN 1 ELSE 0 END), 0) AS covers FROM games",
+        {}
+    );
+    var topPlatforms << database.query(
+        db,
+        "SELECT platform, COUNT(*) AS total FROM games GROUP BY platform ORDER BY total DESC, platform COLLATE NOCASE ASC LIMIT 5",
+        {}
+    );
+    {
+        "summary": summary,
+        "top_platforms": topPlatforms
+    };
+}
+
+pub fct backup(db, path) {
+    database.backup(db, path);
+}
+
+pub fct restore(db, path) {
+    var result << database.restore(db, path);
+    if (result["ok"]) {
+        database.migrate(db, migrations());
+    }
+    result;
+}
+
+pub fct integrity(db) {
+    database.integrity(db);
 }
 
 pub fct close(db) {

@@ -1,0 +1,20 @@
+import "../src/storage.zum" as storage;
+
+var db << storage.open(":memory:");
+var index << 0;
+while (index < 500) {
+    storage.create(db, {
+        "name": "Jogo " + toString(index),
+        "platform": "Plataforma de teste",
+        "franchise": "Franquia de teste",
+        "region": "NTSC-U",
+        "media": "Física",
+        "condition": "Bom",
+        "cover_path": ""
+    });
+    index << index + 1;
+}
+show(storage.count(db));
+show(sizeOf(storage.list(db, "jogo", "Nome A-Z", "Plataforma de teste", "Franquia de teste")));
+show(storage.stats(db)["summary"]["total"]);
+show(storage.close(db));

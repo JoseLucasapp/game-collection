@@ -6,15 +6,50 @@ ZUMBRA_BIN="${ZUMBRA_BIN:-zumbra}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-"$ZUMBRA_BIN" check src/main.zum
-"$ZUMBRA_BIN" check tests/storage_test.zum
-"$ZUMBRA_BIN" check tests/ui_event_test.zum
-"$ZUMBRA_BIN" check tests/layout_test.zum
+for source in \
+  src/main.zum \
+  tests/storage_test.zum \
+  tests/exchange_test.zum \
+  tests/preferences_test.zum \
+  tests/modal_accessibility_test.zum \
+  tests/stress_test.zum \
+  tests/ui_event_test.zum \
+  tests/layout_test.zum; do
+  "$ZUMBRA_BIN" check "$source"
+done
 
 STORAGE_OUTPUT="$("$ZUMBRA_BIN" run tests/storage_test.zum)"
-STORAGE_EXPECTED=$'3\nChrono Trigger\nFinal Fantasy IX\nHalo 3\nHalo 3\nPC\nChrono\nHalo 3\n1\nFinal Fantasy IX\nHalo 3\nSteam\n2\ntrue'
+STORAGE_EXPECTED=$'3\nChrono Trigger\nFinal Fantasy IX\nHalo 3\nHalo 3\nPC\nChrono\nHalo 3\n1\nChrono Trigger\n1\n2\nSteam\nJapão\n3\n2\n1\n1\ntrue\n2\ntrue\n3\nok\ntrue'
 if [[ "$STORAGE_OUTPUT" != "$STORAGE_EXPECTED" ]]; then
   printf 'Unexpected storage test output:\n%s\n' "$STORAGE_OUTPUT" >&2
+  exit 1
+fi
+
+EXCHANGE_OUTPUT="$("$ZUMBRA_BIN" run tests/exchange_test.zum)"
+EXCHANGE_EXPECTED=$'true\ntrue\ntrue\n2\n0\n0\n0\n2\ntrue\n2\nNTSC-U\n2\ntrue\ntrue\ntrue'
+if [[ "$EXCHANGE_OUTPUT" != "$EXCHANGE_EXPECTED" ]]; then
+  printf 'Unexpected exchange test output:\n%s\n' "$EXCHANGE_OUTPUT" >&2
+  exit 1
+fi
+
+PREFERENCES_OUTPUT="$("$ZUMBRA_BIN" run tests/preferences_test.zum)"
+PREFERENCES_EXPECTED=$'true\ntrue\nMais recentes\nPlayStation\nFinal Fantasy'
+if [[ "$PREFERENCES_OUTPUT" != "$PREFERENCES_EXPECTED" ]]; then
+  printf 'Unexpected preferences test output:\n%s\n' "$PREFERENCES_OUTPUT" >&2
+  exit 1
+fi
+
+MODAL_OUTPUT="$("$ZUMBRA_BIN" run tests/modal_accessibility_test.zum)"
+MODAL_EXPECTED=$'2\n2\nmodal-confirm\n0'
+if [[ "$MODAL_OUTPUT" != "$MODAL_EXPECTED" ]]; then
+  printf 'Unexpected modal/accessibility test output:\n%s\n' "$MODAL_OUTPUT" >&2
+  exit 1
+fi
+
+STRESS_OUTPUT="$("$ZUMBRA_BIN" run tests/stress_test.zum)"
+STRESS_EXPECTED=$'500\n500\n500\ntrue'
+if [[ "$STRESS_OUTPUT" != "$STRESS_EXPECTED" ]]; then
+  printf 'Unexpected stress test output:\n%s\n' "$STRESS_OUTPUT" >&2
   exit 1
 fi
 
@@ -32,17 +67,38 @@ if [[ "$LAYOUT_OUTPUT" != "$LAYOUT_EXPECTED" ]]; then
   exit 1
 fi
 
-mkdir -p "$TMP/vm-data"
-VM_OUTPUT="$(XDG_DATA_HOME="$TMP/vm-data" ZUMBRA_DESKTOP_HEADLESS=1 "$ZUMBRA_BIN" app run --manifest zumbra.toml)"
+run_native_test() {
+  local name="$1"
+  local expected="$2"
+  local executable="$TMP/native-$name"
+  "$ZUMBRA_BIN" build --release -o "$executable" "tests/${name}_test.zum"
+  local output
+  output="$("$executable")"
+  if [[ "$output" != "$expected" ]]; then
+    printf 'Unexpected native %s test output:\n%s\n' "$name" "$output" >&2
+    exit 1
+  fi
+}
+
+run_native_test storage "$STORAGE_EXPECTED"
+run_native_test exchange "$EXCHANGE_EXPECTED"
+run_native_test preferences "$PREFERENCES_EXPECTED"
+run_native_test modal_accessibility "$MODAL_EXPECTED"
+run_native_test stress "$STRESS_EXPECTED"
+run_native_test ui_event "$UI_EXPECTED"
+run_native_test layout "$LAYOUT_EXPECTED"
+
+mkdir -p "$TMP/vm-data" "$TMP/vm-config"
+VM_OUTPUT="$(XDG_DATA_HOME="$TMP/vm-data" XDG_CONFIG_HOME="$TMP/vm-config" ZUMBRA_DESKTOP_HEADLESS=1 "$ZUMBRA_BIN" app run --manifest zumbra.toml)"
 VM_EXPECTED=$'collection-ready\n0'
 if [[ "$VM_OUTPUT" != "$VM_EXPECTED" ]]; then
   printf 'Unexpected application VM output:\n%s\n' "$VM_OUTPUT" >&2
   exit 1
 fi
 
-mkdir -p "$TMP/native-data"
+mkdir -p "$TMP/native-data" "$TMP/native-config"
 "$ZUMBRA_BIN" app build --manifest zumbra.toml --target linux --arch amd64 -o "$TMP/zumbra-game-collection"
-NATIVE_OUTPUT="$(XDG_DATA_HOME="$TMP/native-data" ZUMBRA_DESKTOP_HEADLESS=1 "$TMP/zumbra-game-collection")"
+NATIVE_OUTPUT="$(XDG_DATA_HOME="$TMP/native-data" XDG_CONFIG_HOME="$TMP/native-config" ZUMBRA_DESKTOP_HEADLESS=1 "$TMP/zumbra-game-collection")"
 if [[ "$NATIVE_OUTPUT" != "$VM_EXPECTED" ]]; then
   printf 'Unexpected native application output:\n%s\n' "$NATIVE_OUTPUT" >&2
   exit 1

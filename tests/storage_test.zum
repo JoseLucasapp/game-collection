@@ -1,31 +1,52 @@
 import "../src/storage.zum" as storage;
 
+fct game(name, platform, franchise, region, media, condition, cover) {
+    {
+        "name": name,
+        "platform": platform,
+        "franchise": franchise,
+        "region": region,
+        "media": media,
+        "condition": condition,
+        "cover_path": cover
+    };
+}
+
 var db << storage.open(":memory:");
+storage.create(db, game("Final Fantasy IX", "PlayStation", "Final Fantasy", "NTSC-U", "Física", "Excelente", "/tmp/ff9.bmp"));
+storage.create(db, game("Chrono Trigger", "PC", "Chrono", "", "Digital", "", ""));
+storage.create(db, game("Halo 3", "Xbox 360", "Halo", "NTSC-U", "Física", "Bom", ""));
 
-storage.create(db, "Final Fantasy IX", "PlayStation", "Final Fantasy");
-storage.create(db, "Chrono Trigger", "PC", "Chrono");
-storage.create(db, "Halo 3", "Xbox 360", "Halo");
-
-var byName << storage.list(db, "", "Nome A-Z");
+var byName << storage.list(db, "", "Nome A-Z", "", "");
 show(sizeOf(byName));
 show(byName[0]["name"]);
 show(byName[1]["name"]);
 show(byName[2]["name"]);
-
-show(storage.list(db, "", "Nome Z-A")[0]["name"]);
-show(storage.list(db, "", "Plataforma A-Z")[0]["platform"]);
-show(storage.list(db, "", "Franquia A-Z")[0]["franchise"]);
-show(storage.list(db, "", "Mais recentes")[0]["name"]);
-
-var finalGames << storage.list(db, "final", "Nome A-Z");
-show(sizeOf(finalGames));
-show(finalGames[0]["name"]);
-show(storage.list(db, "xbox", "Nome A-Z")[0]["name"]);
+show(storage.list(db, "", "Nome Z-A", "", "")[0]["name"]);
+show(storage.list(db, "", "Plataforma A-Z", "", "")[0]["platform"]);
+show(storage.list(db, "", "Franquia A-Z", "", "")[0]["franchise"]);
+show(storage.list(db, "", "Mais recentes", "", "")[0]["name"]);
+show(sizeOf(storage.list(db, "", "Nome A-Z", "PC", "")));
+show(storage.list(db, "", "Nome A-Z", "PC", "")[0]["name"]);
+show(sizeOf(storage.list(db, "", "Nome A-Z", "", "Halo")));
+show(sizeOf(storage.list(db, "ntsc", "Nome A-Z", "", "")));
 
 var chronoId << byName[0]["id"];
-storage.update(db, chronoId, "Chrono Trigger", "Steam", "Chrono");
+storage.update(db, chronoId, game("Chrono Trigger", "Steam", "Chrono", "Japão", "Digital", "Excelente", ""));
 show(storage.find(db, chronoId)["platform"]);
+show(storage.find(db, chronoId)["region"]);
 
+var stats << storage.stats(db)["summary"];
+show(stats["total"]);
+show(stats["physical"]);
+show(stats["digital"]);
+show(stats["covers"]);
+
+var backupPath << "/tmp/zumbra-z16-storage-backup.sqlite";
+show(storage.backup(db, backupPath)["ok"]);
 storage.remove(db, chronoId);
 show(storage.count(db));
+show(storage.restore(db, backupPath)["ok"]);
+show(storage.count(db));
+show(storage.integrity(db)["value"]);
 show(storage.close(db));

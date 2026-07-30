@@ -1,0 +1,15 @@
+import "../src/preferences.zum" as preferences;
+
+var path << "/tmp/zumbra-z16-preferences.json";
+var saveResult << preferences.save(path, {
+    "dark_mode": true,
+    "sort": "Mais recentes",
+    "platform_filter": "PlayStation",
+    "franchise_filter": "Final Fantasy"
+});
+show(saveResult["ok"]);
+var loaded << preferences.load(path);
+show(loaded["dark_mode"]);
+show(loaded["sort"]);
+show(loaded["platform_filter"]);
+show(loaded["franchise_filter"]);

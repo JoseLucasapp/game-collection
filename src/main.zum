@@ -1,11 +1,13 @@
 import "../vendor/zumbra/std/desktop.zum" as desktop;
 import "../vendor/zumbra/std/ui.zum" as ui;
 import "storage.zum" as storage;
+import "exchange.zum" as exchange;
+import "preferences.zum" as preferences;
 
 var application << desktop.app({
     "backend": "auto",
     "name": "Minha Coleção de Jogos",
-    "version": "0.1.3",
+    "version": "0.2.0",
     "identifier": "dev.zumbra.gamecollection",
     "quitOnLastWindow": true,
     "closeOnRequest": true
@@ -13,15 +15,22 @@ var application << desktop.app({
 
 var paths << application.paths();
 var databasePath << paths["data"] + "/zumbra-game-collection.sqlite";
+var preferencesPath << paths["config"] + "/preferences.json";
+var loadedPreferences << preferences.load(preferencesPath);
 var db << storage.open(databasePath);
 var headlessMode << application.backend() == "headless";
 
+var initialPlatformFilter << loadedPreferences["platform_filter"];
+if (sizeOf(initialPlatformFilter) == 0) { initialPlatformFilter << "Todas as plataformas"; }
+var initialFranchiseFilter << loadedPreferences["franchise_filter"];
+if (sizeOf(initialFranchiseFilter) == 0) { initialFranchiseFilter << "Todas as franquias"; }
+
 var window << application.window({
     "title": "Minha Coleção de Jogos",
-    "width": 1080,
-    "height": 760,
-    "minWidth": 960,
-    "minHeight": 600,
+    "width": 1180,
+    "height": 800,
+    "minWidth": 1024,
+    "minHeight": 650,
     "resizable": true,
     "highDPI": true
 });
@@ -30,297 +39,354 @@ var editingId << ui.intState(0);
 var nameState << ui.stringState("");
 var platformState << ui.stringState("");
 var franchiseState << ui.stringState("");
+var regionState << ui.stringState("");
+var mediaState << ui.stringState("Física");
+var conditionState << ui.stringState("Usado");
+var coverPathState << ui.stringState("");
 var searchState << ui.stringState("");
-var sortState << ui.stringState("Nome A-Z");
-var darkModeState << ui.boolState(false);
+var sortState << ui.stringState(loadedPreferences["sort"]);
+var platformFilterState << ui.stringState(initialPlatformFilter);
+var franchiseFilterState << ui.stringState(initialFranchiseFilter);
+var darkModeState << ui.boolState(loadedPreferences["dark_mode"]);
 var statusState << ui.stringState("Coleção carregada");
 var countState << ui.stringState("0 jogos");
+var deleteModalState << ui.boolState(false);
+var dataModalState << ui.boolState(false);
+var restoreModalState << ui.boolState(false);
+var statsModalState << ui.boolState(false);
+var pendingDeleteId << ui.intState(0);
+var pendingDeleteName << ui.stringState("");
+var pendingRestorePath << ui.stringState("");
+var statsSummaryState << ui.stringState("");
+var statsPlatformsState << ui.stringState("");
 
-var nameInput << ui.input({
-    "id": "game-name",
-    "placeholder": "Nome do jogo",
+var nameInput << ui.input({"id": "game-name", "placeholder": "Nome do jogo", "height": 40, "minHeight": 40, "accessibilityLabel": "Nome do jogo"});
+var platformInput << ui.input({"id": "game-platform", "placeholder": "Ex.: PlayStation 2", "height": 40, "minHeight": 40, "accessibilityLabel": "Plataforma"});
+var franchiseInput << ui.input({"id": "game-franchise", "placeholder": "Ex.: Final Fantasy", "height": 40, "minHeight": 40, "accessibilityLabel": "Franquia"});
+var regionInput << ui.input({"id": "game-region", "placeholder": "Ex.: NTSC-U, PAL ou Japão", "height": 40, "minHeight": 40, "accessibilityLabel": "Região"});
+var mediaSelect << ui.select({
+    "id": "game-media",
+    "options": ["Física", "Digital", "Física e digital"],
+    "value": "Física",
     "height": 40,
-    "minHeight": 40
+    "minHeight": 40,
+    "accessibilityLabel": "Tipo de mídia"
 });
-var platformInput << ui.input({
-    "id": "game-platform",
-    "placeholder": "Ex.: PlayStation 2",
+var conditionSelect << ui.select({
+    "id": "game-condition",
+    "options": ["Usado", "Novo", "Lacrado", "Completo", "Incompleto"],
+    "value": "Usado",
     "height": 40,
-    "minHeight": 40
+    "minHeight": 40,
+    "accessibilityLabel": "Condição"
 });
-var franchiseInput << ui.input({
-    "id": "game-franchise",
-    "placeholder": "Ex.: Final Fantasy",
-    "height": 40,
-    "minHeight": 40
-});
-var searchInput << ui.input({
-    "id": "game-search",
-    "placeholder": "Buscar por nome, plataforma ou franquia",
-    "grow": 1,
-    "height": 40,
-    "minHeight": 40
-});
+var coverPathInput << ui.input({"id": "game-cover", "placeholder": "Caminho de uma imagem local", "grow": 1, "height": 40, "minHeight": 40, "accessibilityLabel": "Capa local"});
+var searchInput << ui.input({"id": "game-search", "placeholder": "Buscar nome, plataforma, franquia ou detalhes", "grow": 1, "height": 40, "minHeight": 40, "accessibilityLabel": "Buscar jogos"});
 var sortSelect << ui.select({
     "id": "game-sort",
     "options": ["Nome A-Z", "Nome Z-A", "Plataforma A-Z", "Franquia A-Z", "Mais recentes"],
-    "value": "Nome A-Z",
-    "selectedIndex": 0,
-    "width": 190,
-    "minWidth": 190,
+    "value": loadedPreferences["sort"],
+    "width": 182,
+    "minWidth": 182,
     "height": 40,
-    "minHeight": 40
+    "minHeight": 40,
+    "accessibilityLabel": "Ordenação"
 });
-var darkToggle << ui.checkbox({"id": "dark-mode", "text": "Modo escuro", "checked": false});
+var platformFilterSelect << ui.select({
+    "id": "platform-filter",
+    "options": ["Todas as plataformas"],
+    "value": initialPlatformFilter,
+    "width": 180,
+    "minWidth": 180,
+    "height": 40,
+    "minHeight": 40,
+    "accessibilityLabel": "Filtrar por plataforma"
+});
+var franchiseFilterSelect << ui.select({
+    "id": "franchise-filter",
+    "options": ["Todas as franquias"],
+    "value": initialFranchiseFilter,
+    "width": 180,
+    "minWidth": 180,
+    "height": 40,
+    "minHeight": 40,
+    "accessibilityLabel": "Filtrar por franquia"
+});
+var darkToggle << ui.checkbox({"id": "dark-mode", "text": "Modo escuro", "checked": loadedPreferences["dark_mode"], "accessibilityLabel": "Alternar modo escuro"});
 
 ui.bind(nameInput, "value", nameState);
 ui.bind(platformInput, "value", platformState);
 ui.bind(franchiseInput, "value", franchiseState);
+ui.bind(regionInput, "value", regionState);
+ui.bind(mediaSelect, "value", mediaState);
+ui.bind(conditionSelect, "value", conditionState);
+ui.bind(coverPathInput, "value", coverPathState);
 ui.bind(searchInput, "value", searchState);
 ui.bind(sortSelect, "value", sortState);
+ui.bind(platformFilterSelect, "value", platformFilterState);
+ui.bind(franchiseFilterSelect, "value", franchiseFilterState);
 ui.bind(darkToggle, "checked", darkModeState);
 
 var statusText << ui.text("");
 var countText << ui.text("");
+var pendingDeleteText << ui.text("");
+var pendingRestoreText << ui.text("");
+var statsSummaryText << ui.text("");
+var statsPlatformsText << ui.text("");
 ui.bind(statusText, "text", statusState);
 ui.bind(countText, "text", countState);
+ui.bind(pendingDeleteText, "text", pendingDeleteName);
+ui.bind(pendingRestoreText, "text", pendingRestorePath);
+ui.bind(statsSummaryText, "text", statsSummaryState);
+ui.bind(statsPlatformsText, "text", statsPlatformsState);
+
+var actionEvents << {};
+var dispatchAction << fct(event) {
+    application.emit({"type": actionEvents[event["targetId"]], "data": {}});
+};
+
+fct actionButton(id, text, eventName, width) {
+    actionEvents[id] << eventName;
+    ui.buttonWith({
+        "id": id,
+        "text": text,
+        "width": width,
+        "minWidth": width,
+        "height": 36,
+        "minHeight": 36,
+        "accessibilityLabel": text,
+        "onClick": dispatchAction
+    });
+}
+
+fct label(text) {
+    ui.containerWith({"height": 20, "minHeight": 20}, [ui.textWith(text, {"fontSize": 12, "fontWeight": "bold"})]);
+}
+
+fct filterValue(value, allLabel) {
+    if (value == allLabel) { return ""; }
+    value;
+}
+
+fct hasOption(options, selected) {
+    for option in options {
+        if (option == selected) { return true; }
+    }
+    false;
+}
+
+fct pickedPath(options) {
+    var selected << desktop.pickFile(application, options);
+    if (sizeOf(selected) == 0) { return ""; }
+    selected[0];
+}
+
+fct importMessage(result) {
+    if (result["ok"]) {
+        return toString(result["imported"]) + " importados, " + toString(result["skipped"]) + " duplicados ignorados e " + toString(result["invalid"]) + " inválidos";
+    }
+    "Falha na importação: " + result["error"];
+}
 
 var gameList << ui.columnWith({
     "id": "game-list",
     "gap": 8,
     "grow": 1,
     "overflowY": "auto",
-    "scrollStep": 80,
+    "scrollStep": 116,
     "scrollbarWidth": 8,
     "scrollbarGutter": 4,
     "paddingRight": 12
 }, []);
-var currentGames << storage.list(db, "", "Nome A-Z");
+var currentGames << storage.list(db, "", loadedPreferences["sort"], "", "");
 var editTargets << {};
 var deleteTargets << {};
-
-var sidebarTitle << ui.containerWith({
-    "height": 34,
-    "minHeight": 34
-}, [
-    ui.textWith("Cadastrar jogo", {
-        "fontSize": 21,
-        "fontWeight": "bold"
-    })
-]);
-
-var sidebarDescription << ui.containerWith({
-    "height": 24,
-    "minHeight": 24
-}, [
-    ui.textWith("Adicione ou edite um item da coleção.", {
-        "fontSize": 12,
-        "color": "muted"
-    })
-]);
-
-var nameLabel << ui.containerWith({
-    "height": 20,
-    "minHeight": 20
-}, [
-    ui.textWith("Nome", {
-        "fontSize": 12,
-        "fontWeight": "bold"
-    })
-]);
-
-var platformLabel << ui.containerWith({
-    "height": 20,
-    "minHeight": 20
-}, [
-    ui.textWith("Plataforma", {
-        "fontSize": 12,
-        "fontWeight": "bold"
-    })
-]);
-
-var franchiseLabelNode << ui.containerWith({
-    "height": 20,
-    "minHeight": 20
-}, [
-    ui.textWith("Franquia", {
-        "fontSize": 12,
-        "fontWeight": "bold"
-    })
-]);
-
-var shortcutsPanel << ui.containerWith({
-    "border": true,
-    "padding": 12,
-    "height": 126,
-    "minHeight": 126
-}, [
-    ui.columnWith({"gap": 6}, [
-        ui.containerWith({"height": 20, "minHeight": 20}, [
-            ui.textWith("Atalhos", {
-                "fontSize": 13,
-                "fontWeight": "bold"
-            })
-        ]),
-        ui.containerWith({"height": 18, "minHeight": 18}, [
-            ui.textWith("Ctrl+N   Novo jogo", {"fontSize": 12})
-        ]),
-        ui.containerWith({"height": 18, "minHeight": 18}, [
-            ui.textWith("Ctrl+S   Salvar", {"fontSize": 12})
-        ]),
-        ui.containerWith({"height": 18, "minHeight": 18}, [
-            ui.textWith("Ctrl+F   Buscar", {"fontSize": 12})
-        ])
-    ])
-]);
+var coverTargets << {};
 
 var sidebar << ui.containerWith({
     "id": "collection-sidebar",
     "border": true,
-    "padding": 20,
-    "width": 340,
-    "minWidth": 340,
-    "maxWidth": 340,
+    "padding": 18,
+    "width": 350,
+    "minWidth": 350,
+    "maxWidth": 350,
     "grow": 0
 }, [
-    ui.columnWith({"gap": 8, "grow": 1}, [
-        sidebarTitle,
-        sidebarDescription,
-
+    ui.columnWith({"gap": 8, "grow": 1, "overflowY": "auto", "scrollStep": 64, "scrollbarWidth": 8, "paddingRight": 10}, [
+        ui.containerWith({"height": 34, "minHeight": 34}, [ui.textWith("Cadastrar jogo", {"fontSize": 21, "fontWeight": "bold"})]),
+        ui.containerWith({"height": 24, "minHeight": 24}, [ui.textWith("Adicione ou edite um item da coleção.", {"fontSize": 12, "color": "muted"})]),
         ui.spacer(4),
-
-        nameLabel,
-        nameInput,
-
+        label("Nome"), nameInput,
+        label("Plataforma"), platformInput,
+        label("Franquia"), franchiseInput,
+        label("Região"), regionInput,
+        label("Mídia"), mediaSelect,
+        label("Condição"), conditionSelect,
+        label("Capa local"),
+        ui.rowWith({"gap": 8, "height": 40, "minHeight": 40}, [coverPathInput, actionButton("select-cover", "Escolher", "collection_pick_cover", 78)]),
         ui.spacer(4),
-
-        platformLabel,
-        platformInput,
-
-        ui.spacer(4),
-
-        franchiseLabelNode,
-        franchiseInput,
-
-        ui.spacer(6),
-
-        ui.rowWith({
-            "gap": 10,
-            "height": 40,
-            "minHeight": 40
-        }, [
-            ui.buttonWith({
-                "id": "clear-game",
-                "text": "Limpar",
-                "grow": 1,
-                "height": 40,
-                "minHeight": 40,
-                "onClick": fct(event) {
-                    event;
-                    application.emit({"type": "collection_clear", "data": {}});
-                }
-            }),
-            ui.buttonWith({
-                "id": "save-game",
-                "text": "Salvar jogo",
-                "grow": 1,
-                "height": 40,
-                "minHeight": 40,
-                "onClick": fct(event) {
-                    event;
-                    application.emit({"type": "collection_save", "data": {}});
-                },
-                "accessibilityLabel": "Salvar jogo"
-            })
+        ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
+            actionButton("clear-game", "Limpar", "collection_clear", 144),
+            actionButton("save-game", "Salvar jogo", "collection_save", 144)
         ]),
-
-        ui.spacer(1),
-        shortcutsPanel
+        ui.containerWith({"border": true, "padding": 10, "height": 146, "minHeight": 146}, [
+            ui.columnWith({"gap": 5}, [
+                ui.textWith("Atalhos", {"fontSize": 13, "fontWeight": "bold"}),
+                ui.textWith("Ctrl+N  Novo • Ctrl+S  Salvar", {"fontSize": 12}),
+                ui.textWith("Ctrl+F  Buscar • Ctrl+D  Dados", {"fontSize": 12}),
+                ui.textWith("Ctrl+T  Estatísticas", {"fontSize": 12}),
+                ui.textWith("Tab / Shift+Tab  Navegar", {"fontSize": 12}),
+                ui.textWith("Esc  Fechar diálogo", {"fontSize": 12})
+            ])
+        ])
     ])
 ]);
 
-var mainTitleRow << ui.rowWith({
-    "align": "center",
-    "gap": 12,
-    "height": 44,
-    "minHeight": 44
-}, [
-    ui.textWith("Minha Coleção de Jogos", {
-        "fontSize": 26,
-        "fontWeight": "bold",
-        "accessibilityLabel": "Título do aplicativo"
-    }),
-    ui.spacer(1),
-    countText,
-    darkToggle
-]);
-
-var mainSubtitle << ui.containerWith({
-    "height": 24,
-    "minHeight": 24
-}, [
-    ui.textWith("Organize os jogos da sua coleção física e digital.", {
-        "fontSize": 13,
-        "color": "muted"
-    })
-]);
-
-var collectionToolbar << ui.rowWith({
-    "gap": 10,
-    "align": "center",
-    "height": 40,
-    "minHeight": 40
-}, [
-    searchInput,
-    sortSelect
-]);
-
-var collectionPanel << ui.columnWith({
-    "id": "collection-content",
-    "gap": 10,
-    "grow": 1
-}, [
-    mainTitleRow,
-    mainSubtitle,
-    collectionToolbar,
-    ui.containerWith({
-        "border": true,
-        "padding": 12,
-        "grow": 1,
-        "minHeight": 260
-    }, [
-        gameList
+var collectionPanel << ui.columnWith({"id": "collection-content", "gap": 10, "grow": 1}, [
+    ui.rowWith({"align": "center", "gap": 12, "height": 44, "minHeight": 44}, [
+        ui.textWith("Minha Coleção de Jogos", {"fontSize": 26, "fontWeight": "bold", "accessibilityLabel": "Título do aplicativo"}),
+        ui.spacer(1), countText, darkToggle
     ]),
-    ui.rowWith({
-        "align": "center",
-        "gap": 8,
-        "height": 26,
-        "minHeight": 26
-    }, [
+    ui.containerWith({"height": 24, "minHeight": 24}, [ui.textWith("Organize sua biblioteca física e digital com dados locais.", {"fontSize": 13, "color": "muted"})]),
+    ui.rowWith({"gap": 8, "align": "center", "height": 40, "minHeight": 40}, [searchInput, sortSelect]),
+    ui.rowWith({"gap": 8, "align": "center", "height": 40, "minHeight": 40}, [
+        platformFilterSelect,
+        franchiseFilterSelect,
+        ui.spacer(1),
+        actionButton("collection-data", "Dados", "collection_open_data", 76),
+        actionButton("collection-stats", "Estatísticas", "collection_open_stats", 104)
+    ]),
+    ui.containerWith({"border": true, "padding": 12, "grow": 1, "minHeight": 260}, [gameList]),
+    ui.rowWith({"align": "center", "gap": 8, "height": 28, "minHeight": 28}, [
         statusText,
         ui.spacer(1),
-        ui.textWith("Dados locais em SQLite", {
-            "fontSize": 12,
-            "color": "muted"
-        })
+        ui.textWith("SQLite local • dados sob seu controle", {"fontSize": 12, "color": "muted"})
     ])
 ]);
 
-var root << ui.rowWith({
-    "padding": 18,
-    "gap": 18
+var deleteModal << ui.modal({
+    "id": "delete-modal",
+    "visible": false,
+    "width": 460,
+    "height": 230,
+    "padding": 20,
+    "accessibilityLabel": "Confirmação de exclusão"
 }, [
-    sidebar,
-    collectionPanel
+    ui.columnWith({"gap": 14, "grow": 1}, [
+        ui.textWith("Excluir jogo?", {"fontSize": 22, "fontWeight": "bold"}),
+        ui.textWith("Esta ação removerá permanentemente da coleção:", {"fontSize": 13}),
+        pendingDeleteText,
+        ui.spacer(1),
+        ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
+            ui.spacer(1),
+            actionButton("cancel-delete", "Cancelar", "collection_cancel_delete", 96),
+            actionButton("confirm-delete", "Excluir", "collection_confirm_delete", 96)
+        ])
+    ])
 ]);
+ui.bind(deleteModal, "visible", deleteModalState);
 
-var context << ui.mount(application, window, root, {"theme": ui.theme("light")});
+var dataModal << ui.modal({
+    "id": "data-modal",
+    "visible": false,
+    "width": 570,
+    "height": 410,
+    "padding": 20,
+    "accessibilityLabel": "Importação, exportação e backup"
+}, [
+    ui.columnWith({"gap": 14, "grow": 1}, [
+        ui.textWith("Dados da coleção", {"fontSize": 22, "fontWeight": "bold"}),
+        ui.textWith("Transfira sua coleção ou proteja o banco SQLite local.", {"fontSize": 13, "color": "muted"}),
+        label("JSON versionado"),
+        ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
+            actionButton("export-json", "Exportar JSON", "collection_export_json", 132),
+            actionButton("import-json", "Importar JSON", "collection_import_json", 132)
+        ]),
+        label("CSV"),
+        ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
+            actionButton("export-csv", "Exportar CSV", "collection_export_csv", 132),
+            actionButton("import-csv", "Importar CSV", "collection_import_csv", 132)
+        ]),
+        label("Banco SQLite"),
+        ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
+            actionButton("backup-db", "Criar backup", "collection_backup", 132),
+            actionButton("restore-db", "Restaurar backup", "collection_choose_restore", 132)
+        ]),
+        ui.spacer(1),
+        ui.rowWith({"height": 40, "minHeight": 40}, [ui.spacer(1), actionButton("close-data", "Fechar", "collection_close_data", 96)])
+    ])
+]);
+ui.bind(dataModal, "visible", dataModalState);
+
+var restoreModal << ui.modal({
+    "id": "restore-modal",
+    "visible": false,
+    "width": 500,
+    "height": 270,
+    "padding": 20,
+    "accessibilityLabel": "Confirmação de restauração"
+}, [
+    ui.columnWith({"gap": 14, "grow": 1}, [
+        ui.textWith("Restaurar backup?", {"fontSize": 22, "fontWeight": "bold"}),
+        ui.textWith("A coleção atual será substituída. Antes disso, será criado automaticamente o arquivo before-restore.sqlite.", {"fontSize": 13, "wrapWidth": 440}),
+        pendingRestoreText,
+        ui.spacer(1),
+        ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
+            ui.spacer(1),
+            actionButton("cancel-restore", "Cancelar", "collection_cancel_restore", 96),
+            actionButton("confirm-restore", "Restaurar", "collection_confirm_restore", 104)
+        ])
+    ])
+]);
+ui.bind(restoreModal, "visible", restoreModalState);
+
+var statsModal << ui.modal({
+    "id": "stats-modal",
+    "visible": false,
+    "width": 500,
+    "height": 390,
+    "padding": 20,
+    "accessibilityLabel": "Estatísticas da coleção"
+}, [
+    ui.columnWith({"gap": 14, "grow": 1}, [
+        ui.textWith("Estatísticas", {"fontSize": 22, "fontWeight": "bold"}),
+        statsSummaryText,
+        label("Principais plataformas"),
+        statsPlatformsText,
+        ui.spacer(1),
+        ui.rowWith({"height": 40, "minHeight": 40}, [ui.spacer(1), actionButton("close-stats", "Fechar", "collection_close_stats", 96)])
+    ])
+]);
+ui.bind(statsModal, "visible", statsModalState);
+
+var mainLayout << ui.rowWith({"padding": 18, "gap": 18, "grow": 1}, [sidebar, collectionPanel]);
+var root << ui.containerWith({"grow": 1}, [mainLayout, deleteModal, dataModal, restoreModal, statsModal]);
+var initialTheme << "light";
+if (loadedPreferences["dark_mode"]) { initialTheme << "dark"; }
+var context << ui.mount(application, window, root, {"theme": ui.theme(initialTheme)});
+
+var notify << fct(message, urgency) {
+    desktop.notify(application, {"title": "Minha Coleção de Jogos", "body": message, "urgency": urgency});
+};
+
+var savePreferences << fct() {
+    preferences.save(preferencesPath, {
+        "dark_mode": darkModeState.get(),
+        "sort": sortState.get(),
+        "platform_filter": filterValue(platformFilterState.get(), "Todas as plataformas"),
+        "franchise_filter": filterValue(franchiseFilterState.get(), "Todas as franquias")
+    });
+};
 
 var clearForm << fct() {
     editingId.set(0);
     nameState.set("");
     platformState.set("");
     franchiseState.set("");
+    regionState.set("");
+    mediaState.set("Física");
+    conditionState.set("Usado");
+    coverPathState.set("");
     statusState.set("Novo jogo");
     context.focus(nameInput);
 };
@@ -330,89 +396,109 @@ var requestRefresh << fct() {
 };
 
 var saveGame << fct() {
-    var name << nameState.get();
-    var platform << platformState.get();
-    var franchise << franchiseState.get();
-    var currentId << editingId.get();
-
-    if (sizeOf(name) == 0) {
+    var game << {
+        "name": nameState.get(),
+        "platform": platformState.get(),
+        "franchise": franchiseState.get(),
+        "region": regionState.get(),
+        "media": mediaState.get(),
+        "condition": conditionState.get(),
+        "cover_path": coverPathState.get()
+    };
+    if (sizeOf(game["name"]) == 0) {
         statusState.set("Informe o nome do jogo");
         context.focus(nameInput);
         return false;
     }
-    if (sizeOf(platform) == 0) {
+    if (sizeOf(game["platform"]) == 0) {
         statusState.set("Informe a plataforma");
         context.focus(platformInput);
         return false;
     }
-
+    var currentId << editingId.get();
     if (currentId > 0) {
-        storage.update(db, currentId, name, platform, franchise);
+        storage.update(db, currentId, game);
         statusState.set("Jogo atualizado");
+        notify(game["name"] + " foi atualizado", "normal");
     } else {
-        storage.create(db, name, platform, franchise);
+        storage.create(db, game);
         statusState.set("Jogo adicionado à coleção");
+        notify(game["name"] + " foi adicionado", "normal");
     }
-
     editingId.set(0);
     nameState.set("");
     platformState.set("");
     franchiseState.set("");
+    regionState.set("");
+    mediaState.set("Física");
+    conditionState.set("Usado");
+    coverPathState.set("");
     requestRefresh();
     true;
 };
 
 var editGame << fct(event) {
-    var targetId << event["targetId"];
-    var game << editTargets[targetId];
+    var game << editTargets[event["targetId"]];
     editingId.set(game["id"]);
     nameState.set(game["name"]);
     platformState.set(game["platform"]);
     franchiseState.set(game["franchise"]);
+    regionState.set(game["region"]);
+    mediaState.set(game["media"]);
+    conditionState.set(game["condition"]);
+    coverPathState.set(game["cover_path"]);
     statusState.set("Editando " + game["name"]);
     context.focus(nameInput);
 };
 
-var deleteGame << fct(event) {
-    var targetId << event["targetId"];
-    var game << deleteTargets[targetId];
-    storage.remove(db, game["id"]);
-    statusState.set(game["name"] + " removido da coleção");
-    if (editingId.get() == game["id"]) {
-        clearForm();
-    }
-    requestRefresh();
+var askDeleteGame << fct(event) {
+    var game << deleteTargets[event["targetId"]];
+    pendingDeleteId.set(game["id"]);
+    pendingDeleteName.set(game["name"]);
+    deleteModalState.set(true);
+    context.focus(ui.find(context, "cancel-delete"));
 };
 
-application.on("collection_clear", fct(event) {
-    event;
-    clearForm();
-});
+var openCover << fct(event) {
+    var game << coverTargets[event["targetId"]];
+    if (sizeOf(game["cover_path"]) > 0) {
+        desktop.openExternal(application, game["cover_path"]);
+    }
+};
 
-application.on("collection_save", fct(event) {
+var refreshCollection << fct(event) {
     event;
-    saveGame();
-});
-
-application.on("collection_refresh", fct(event) {
-    event;
-
     ui.remove(gameList, "collection-empty");
     for oldGame in currentGames {
         ui.remove(gameList, "game-row-" + toString(oldGame["id"]));
     }
 
-    currentGames << storage.list(db, searchState.get(), sortState.get());
+    var platformOptions << ["Todas as plataformas"];
+    for platform in storage.platforms(db) { addToArrayEnd(platformOptions, platform); }
+    ui.set(platformFilterSelect, "options", platformOptions);
+    if (hasOption(platformOptions, platformFilterState.get())) { platformOptions; } else { platformFilterState.set("Todas as plataformas"); }
+
+    var franchiseOptions << ["Todas as franquias"];
+    for franchise in storage.franchises(db) { addToArrayEnd(franchiseOptions, franchise); }
+    ui.set(franchiseFilterSelect, "options", franchiseOptions);
+    if (hasOption(franchiseOptions, franchiseFilterState.get())) { franchiseOptions; } else { franchiseFilterState.set("Todas as franquias"); }
+
+    currentGames << storage.list(
+        db,
+        searchState.get(),
+        sortState.get(),
+        filterValue(platformFilterState.get(), "Todas as plataformas"),
+        filterValue(franchiseFilterState.get(), "Todas as franquias")
+    );
     editTargets << {};
     deleteTargets << {};
-    countState.set(toString(sizeOf(currentGames)) + " jogos");
+    coverTargets << {};
+    countState.set(toString(sizeOf(currentGames)) + " exibidos • " + toString(storage.count(db)) + " total");
 
     if (sizeOf(currentGames) == 0) {
-        ui.add(gameList, ui.containerWith({
-            "id": "collection-empty",
-            "padding": 18,
-            "align": "center"
-        }, [ui.text("Nenhum jogo encontrado. Adicione o primeiro item da coleção.")]));
+        ui.add(gameList, ui.containerWith({"id": "collection-empty", "padding": 18, "align": "center"}, [
+            ui.text("Nenhum jogo encontrado. Ajuste os filtros ou adicione o primeiro item.")
+        ]));
     }
 
     for game in currentGames {
@@ -420,14 +506,35 @@ application.on("collection_refresh", fct(event) {
         var rowId << "game-row-" + toString(gameId);
         var editId << "edit-game-" + toString(gameId);
         var deleteId << "delete-game-" + toString(gameId);
+        var coverId << "cover-game-" + toString(gameId);
         var franchiseLabel << game["franchise"];
+        var details << "";
+        if (sizeOf(franchiseLabel) == 0) { franchiseLabel << "Sem franquia"; }
+        if (sizeOf(game["region"]) > 0) { details << game["region"]; }
+        if (sizeOf(game["media"]) > 0) {
+            if (sizeOf(details) > 0) { details << details + " • "; }
+            details << details + game["media"];
+        }
+        if (sizeOf(game["condition"]) > 0) {
+            if (sizeOf(details) > 0) { details << details + " • "; }
+            details << details + game["condition"];
+        }
+        if (sizeOf(details) == 0) { details << "Sem detalhes adicionais"; }
 
         editTargets[editId] << game;
         deleteTargets[deleteId] << game;
+        coverTargets[coverId] << game;
 
-        if (sizeOf(franchiseLabel) == 0) {
-            franchiseLabel << "Sem franquia";
-        }
+        var cardRow << ui.rowWith({"gap": 8, "align": "center", "height": 92, "minHeight": 92}, [
+            ui.columnWith({"gap": 0, "grow": 1, "height": 80, "minHeight": 80, "justify": "start"}, [
+                ui.textWith(game["name"], {"fontSize": 17, "fontWeight": "bold", "height": 40, "minHeight": 40, "wrapWidth": 310}),
+                ui.textWith(game["platform"] + " • " + franchiseLabel, {"fontSize": 13, "color": "muted", "height": 20, "minHeight": 20}),
+                ui.textWith(details, {"fontSize": 12, "color": "muted", "height": 20, "minHeight": 20})
+            ]),
+            ui.buttonWith({"id": coverId, "text": "Capa", "visible": sizeOf(game["cover_path"]) > 0, "width": 64, "minWidth": 64, "height": 36, "minHeight": 36, "onClick": openCover, "accessibilityLabel": "Abrir capa de " + game["name"]}),
+            ui.buttonWith({"id": editId, "text": "Editar", "width": 68, "minWidth": 68, "height": 36, "minHeight": 36, "onClick": editGame, "accessibilityLabel": "Editar " + game["name"]}),
+            ui.buttonWith({"id": deleteId, "text": "Excluir", "width": 68, "minWidth": 68, "height": 36, "minHeight": 36, "danger": true, "onClick": askDeleteGame, "accessibilityLabel": "Excluir " + game["name"]})
+        ]);
 
         ui.add(gameList, ui.containerWith({
             "id": rowId,
@@ -436,58 +543,9 @@ application.on("collection_refresh", fct(event) {
             "paddingRight": 10,
             "paddingTop": 4,
             "paddingBottom": 8,
-            "height": 72,
-            "minHeight": 72
-        }, [
-            ui.rowWith({
-                "gap": 10,
-                "align": "center",
-                "height": 60,
-                "minHeight": 60
-            }, [
-                ui.columnWith({
-                    "gap": 0,
-                    "grow": 1,
-                    "height": 44,
-                    "minHeight": 44,
-                    "justify": "start"
-                }, [
-                    ui.textWith(game["name"], {
-                        "fontSize": 17,
-                        "fontWeight": "bold",
-                        "height": 24,
-                        "minHeight": 24
-                    }),
-                    ui.textWith(game["platform"] + " • " + franchiseLabel, {
-                        "fontSize": 13,
-                        "color": "muted",
-                        "height": 20,
-                        "minHeight": 20
-                    })
-                ]),
-                ui.buttonWith({
-                    "id": editId,
-                    "text": "Editar",
-                    "width": 74,
-                    "minWidth": 74,
-                    "height": 36,
-                    "minHeight": 36,
-                    "onClick": editGame,
-                    "accessibilityLabel": "Editar " + game["name"]
-                }),
-                ui.buttonWith({
-                    "id": deleteId,
-                    "text": "Excluir",
-                    "width": 74,
-                    "minWidth": 74,
-                    "height": 36,
-                    "minHeight": 36,
-                    "danger": true,
-                    "onClick": deleteGame,
-                    "accessibilityLabel": "Excluir " + game["name"]
-                })
-            ])
-        ]));
+            "height": 108,
+            "minHeight": 108
+        }, [cardRow]));
     }
 
     if (headlessMode) {
@@ -495,29 +553,161 @@ application.on("collection_refresh", fct(event) {
         show(storage.count(db));
         application.quit();
     }
-});
+};
 
-searchState.subscribe(fct(value) {
-    value;
-    requestRefresh();
+application.on("collection_clear", fct(event) { event; clearForm(); });
+application.on("collection_save", fct(event) { event; saveGame(); });
+application.on("collection_pick_cover", fct(event) {
+    event;
+    var path << pickedPath({"title": "Escolha a capa local", "defaultPath": paths["home"], "multiple": false});
+    if (sizeOf(path) > 0) { coverPathState.set(path); statusState.set("Capa local selecionada"); }
 });
-sortState.subscribe(fct(value) {
-    value;
-    requestRefresh();
-});
-darkModeState.subscribe(fct(enabled) {
-    if (enabled) {
-        context.setTheme(ui.theme("dark"));
-    } else {
-        context.setTheme(ui.theme("light"));
+application.on("collection_open_data", fct(event) { event; dataModalState.set(true); context.focus(ui.find(context, "export-json")); });
+application.on("collection_close_data", fct(event) { event; dataModalState.set(false); });
+application.on("collection_open_stats", fct(event) {
+    event;
+    var result << storage.stats(db);
+    var summary << result["summary"];
+    statsSummaryState.set(
+        "Total: " + toString(summary["total"]) + "\n" +
+        "Plataformas: " + toString(summary["platforms"]) + "\n" +
+        "Franquias: " + toString(summary["franchises"]) + "\n" +
+        "Mídia física: " + toString(summary["physical"]) + " • Digital: " + toString(summary["digital"]) + "\n" +
+        "Capas locais: " + toString(summary["covers"])
+    );
+    var platformLines << "Nenhum jogo cadastrado";
+    if (sizeOf(result["top_platforms"]) > 0) {
+        platformLines << "";
+        for row in result["top_platforms"] {
+            if (sizeOf(platformLines) > 0) { platformLines << platformLines + "\n"; }
+            platformLines << platformLines + row["platform"] + ": " + toString(row["total"]);
+        }
     }
+    statsPlatformsState.set(platformLines);
+    statsModalState.set(true);
+    context.focus(ui.find(context, "close-stats"));
+});
+application.on("collection_close_stats", fct(event) { event; statsModalState.set(false); });
+application.on("collection_cancel_delete", fct(event) { event; deleteModalState.set(false); pendingDeleteId.set(0); });
+application.on("collection_confirm_delete", fct(event) {
+    event;
+    var id << pendingDeleteId.get();
+    var name << pendingDeleteName.get();
+    if (id > 0) {
+        storage.remove(db, id);
+        if (editingId.get() == id) { clearForm(); }
+        statusState.set(name + " removido da coleção");
+        notify(name + " foi removido", "normal");
+    }
+    deleteModalState.set(false);
+    pendingDeleteId.set(0);
+    requestRefresh();
+});
+application.on("collection_export_json", fct(event) {
+    event;
+    var path << pickedPath({"title": "Exportar coleção em JSON", "mode": "save", "save": true, "defaultPath": paths["home"] + "/minha-colecao-de-jogos.json"});
+    if (sizeOf(path) > 0) {
+        var result << exchange.exportJson(db, path);
+        if (result["ok"]) { statusState.set("Coleção exportada em JSON"); notify("Exportação JSON concluída", "normal"); }
+        else { statusState.set("Falha ao exportar JSON: " + result["error"]); notify("Falha na exportação JSON", "critical"); }
+    }
+});
+application.on("collection_import_json", fct(event) {
+    event;
+    var path << pickedPath({"title": "Importar coleção em JSON", "defaultPath": paths["home"], "multiple": false});
+    if (sizeOf(path) > 0) {
+        var result << exchange.importJson(db, path);
+        var message << importMessage(result);
+        statusState.set(message); notify(message, "normal"); requestRefresh();
+    }
+});
+application.on("collection_export_csv", fct(event) {
+    event;
+    var path << pickedPath({"title": "Exportar coleção em CSV", "mode": "save", "save": true, "defaultPath": paths["home"] + "/minha-colecao-de-jogos.csv"});
+    if (sizeOf(path) > 0) {
+        var result << exchange.exportCsv(db, path);
+        if (result["ok"]) { statusState.set("Coleção exportada em CSV"); notify("Exportação CSV concluída", "normal"); }
+        else { statusState.set("Falha ao exportar CSV: " + result["error"]); notify("Falha na exportação CSV", "critical"); }
+    }
+});
+application.on("collection_import_csv", fct(event) {
+    event;
+    var path << pickedPath({"title": "Importar coleção em CSV", "defaultPath": paths["home"], "multiple": false});
+    if (sizeOf(path) > 0) {
+        var result << exchange.importCsv(db, path);
+        var message << importMessage(result);
+        statusState.set(message); notify(message, "normal"); requestRefresh();
+    }
+});
+application.on("collection_backup", fct(event) {
+    event;
+    var path << pickedPath({"title": "Criar backup do banco", "mode": "save", "save": true, "defaultPath": paths["home"] + "/minha-colecao-de-jogos-backup.sqlite"});
+    if (sizeOf(path) > 0) {
+        var result << storage.backup(db, path);
+        if (result["ok"]) { statusState.set("Backup criado com sucesso"); notify("Backup criado com sucesso", "normal"); }
+        else { statusState.set("Falha no backup: " + result["error"]); notify("Falha ao criar backup", "critical"); }
+    }
+});
+application.on("collection_choose_restore", fct(event) {
+    event;
+    var path << pickedPath({"title": "Escolha um backup SQLite", "defaultPath": paths["home"], "multiple": false});
+    if (sizeOf(path) > 0) {
+        pendingRestorePath.set(path);
+        dataModalState.set(false);
+        restoreModalState.set(true);
+        context.focus(ui.find(context, "cancel-restore"));
+    }
+});
+application.on("collection_cancel_restore", fct(event) { event; restoreModalState.set(false); pendingRestorePath.set(""); });
+application.on("collection_confirm_restore", fct(event) {
+    event;
+    var sourcePath << pendingRestorePath.get();
+    var safetyPath << paths["data"] + "/before-restore.sqlite";
+    var safetyResult << storage.backup(db, safetyPath);
+    if (safetyResult["ok"]) {
+        var result << storage.restore(db, sourcePath);
+        if (result["ok"]) {
+            clearForm();
+            statusState.set("Backup restaurado com sucesso");
+            notify("Coleção restaurada com sucesso", "normal");
+            requestRefresh();
+        } else {
+            statusState.set("Falha na restauração: " + result["error"]);
+            notify("Falha ao restaurar o backup", "critical");
+        }
+    } else {
+        statusState.set("Restauração cancelada: não foi possível criar o backup de segurança");
+        notify("Restauração cancelada por segurança", "critical");
+    }
+    restoreModalState.set(false);
+    pendingRestorePath.set("");
+});
+application.on("collection_refresh", refreshCollection);
+
+searchState.subscribe(fct(value) { value; requestRefresh(); });
+sortState.subscribe(fct(value) { value; savePreferences(); requestRefresh(); });
+platformFilterState.subscribe(fct(value) { value; savePreferences(); requestRefresh(); });
+franchiseFilterState.subscribe(fct(value) { value; savePreferences(); requestRefresh(); });
+darkModeState.subscribe(fct(enabled) {
+    if (enabled) { context.setTheme(ui.theme("dark")); } else { context.setTheme(ui.theme("light")); }
+    savePreferences();
 });
 
 application.shortcut("Ctrl+N", fct(event) { event; clearForm(); });
 application.shortcut("Ctrl+S", fct(event) { event; saveGame(); });
 application.shortcut("Ctrl+F", fct(event) { event; context.focus(searchInput); });
+application.shortcut("Ctrl+D", fct(event) { event; dataModalState.set(true); });
+application.shortcut("Ctrl+T", fct(event) { event; application.emit({"type": "collection_open_stats", "data": {}}); });
 application.shortcut("Ctrl+Q", fct(event) { event; application.quit(); });
+application.shortcut("Escape", fct(event) {
+    event;
+    deleteModalState.set(false);
+    dataModalState.set(false);
+    restoreModalState.set(false);
+    statsModalState.set(false);
+});
 application.shortcut("Tab", fct(event) { event; context.focusNext(false); });
+application.shortcut("Shift+Tab", fct(event) { event; context.focusNext(true); });
 
 requestRefresh();
 window.show();

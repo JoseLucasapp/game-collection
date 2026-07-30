@@ -1,0 +1,24 @@
+import "../vendor/zumbra/std/data.zum" as data;
+
+pub fct defaults() {
+    {
+        "dark_mode": false,
+        "sort": "Nome A-Z",
+        "platform_filter": "",
+        "franchise_filter": ""
+    };
+}
+
+pub fct load(path) {
+    if (data.exists(path)) {
+        var result << data.readJsonResult(path);
+        if (result["ok"]) {
+            return result["value"];
+        }
+    }
+    defaults();
+}
+
+pub fct save(path, values) {
+    data.writeJsonResult(path, values, true);
+}

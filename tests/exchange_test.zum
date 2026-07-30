@@ -1,0 +1,43 @@
+import "../src/storage.zum" as storage;
+import "../src/exchange.zum" as exchange;
+
+fct game(name, platform, franchise, region, media) {
+    {
+        "name": name,
+        "platform": platform,
+        "franchise": franchise,
+        "region": region,
+        "media": media,
+        "condition": "Bom",
+        "cover_path": ""
+    };
+}
+
+var source << storage.open(":memory:");
+storage.create(source, game("Final Fantasy IX", "PlayStation", "Final Fantasy", "NTSC-U", "Física"));
+storage.create(source, game("Chrono Trigger", "PC", "Chrono", "", "Digital"));
+
+var jsonPath << "/tmp/zumbra-z16-collection.json";
+var csvPath << "/tmp/zumbra-z16-collection.csv";
+show(exchange.exportJson(source, jsonPath)["ok"]);
+show(exchange.exportCsv(source, csvPath)["ok"]);
+
+var jsonTarget << storage.open(":memory:");
+var jsonImport << exchange.importJson(jsonTarget, jsonPath);
+show(jsonImport["ok"]);
+show(jsonImport["imported"]);
+show(jsonImport["skipped"]);
+show(jsonImport["invalid"]);
+var duplicateImport << exchange.importJson(jsonTarget, jsonPath);
+show(duplicateImport["imported"]);
+show(duplicateImport["skipped"]);
+
+var csvTarget << storage.open(":memory:");
+var csvImport << exchange.importCsv(csvTarget, csvPath);
+show(csvImport["ok"]);
+show(csvImport["imported"]);
+show(storage.find(csvTarget, 1)["region"]);
+show(storage.count(csvTarget));
+show(storage.close(source));
+show(storage.close(jsonTarget));
+show(storage.close(csvTarget));

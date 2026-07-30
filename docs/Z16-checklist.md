@@ -1,32 +1,75 @@
 # Z16 — Primeiro aplicativo desktop oficial
 
-## Z16.1 — Coleção funcional
+## Produto
 
 - [x] Repositório separado do compilador.
-- [x] Manifesto de aplicação.
-- [x] Banco SQLite local.
-- [x] Migration inicial.
-- [x] Cadastro de jogos.
-- [x] Edição de jogos.
-- [x] Exclusão de jogos.
-- [x] Busca por nome, plataforma e franquia.
-- [x] Ordenação por nome.
-- [x] Ordenação por plataforma.
-- [x] Ordenação por franquia.
-- [x] Ordenação por cadastro recente.
+- [x] Manifesto desktop.
+- [x] Janela redimensionável.
+- [x] Layout real de aplicativo.
+- [x] Formulários e validação.
+- [x] Binding bidirecional.
+- [x] Lista dinâmica com scroll interno.
+- [x] Nomes longos sem invadir ações.
+
+## Dados
+
+- [x] SQLite local.
+- [x] Migrations versionadas.
+- [x] CRUD completo.
+- [x] Busca geral.
+- [x] Filtros por plataforma e franquia.
+- [x] Ordenação.
+- [x] Campos de região, mídia e condição.
+- [x] Capas locais.
+- [x] Estatísticas.
+- [x] Integridade do banco.
+
+## Portabilidade e segurança
+
+- [x] Confirmação antes de excluir.
+- [x] Exportação JSON versionada.
+- [x] Importação JSON validada.
+- [x] Exportação CSV.
+- [x] Importação CSV validada.
+- [x] Detecção de duplicatas.
+- [x] Backup SQLite.
+- [x] Restauração SQLite.
+- [x] Backup automático antes da restauração.
+- [x] File picker de abrir e salvar.
+- [x] Erros recuperáveis.
+- [x] Notificações.
+
+## Experiência desktop
+
 - [x] Tema claro e escuro.
+- [x] Persistência de preferências.
 - [x] Atalhos de teclado.
-- [x] Teste automatizado da persistência.
-- [ ] Validação visual no Debian.
+- [x] Navegação com Tab e Shift+Tab.
+- [x] Modais com isolamento de foco.
+- [x] Fundo bloqueado durante modais.
+- [x] Árvore de acessibilidade correta.
 
-## Próximos incrementos do Z16
+## Qualidade e distribuição
 
-- [ ] Confirmação antes de excluir.
-- [ ] Filtro dedicado por plataforma e franquia.
-- [ ] Importação e exportação CSV/JSON.
-- [ ] Campos opcionais de região, mídia e estado de conservação.
-- [ ] Estatísticas da coleção.
-- [ ] Capas locais.
-- [ ] Backup e restauração.
-- [ ] Pacotes finais Linux, Windows e macOS.
-- [ ] Testes de acessibilidade e integração.
+- [x] Testes de storage e migrations.
+- [x] Testes de round-trip JSON/CSV.
+- [x] Testes de backup/restauração/integridade.
+- [x] Teste de 500 registros.
+- [x] Testes de acessibilidade e integração.
+- [x] Execução headless na VM.
+- [x] Build e execução headless nativa C11.
+- [x] Bundle Linux.
+- [x] Pacote `.deb` validado no Debian.
+- [x] AppDir e AppImage validados no Debian.
+- [x] Estrutura de pacote Windows e instalador NSIS.
+- [x] Estrutura de bundle macOS `.app` e ZIP.
+- [x] Documentação do usuário e arquitetura.
+- [x] Higiene do repositório.
+
+## Validação de release por plataforma
+
+- [x] Debian/Linux real.
+- [ ] Windows real — executar antes de publicar um instalador Windows.
+- [ ] macOS real — executar antes de publicar um bundle macOS.
+
+As duas últimas linhas são validações externas de release, não lacunas de implementação do Z16.

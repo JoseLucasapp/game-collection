@@ -2,25 +2,38 @@
 
 ## Repositórios
 
-O aplicativo é deliberadamente separado do `Zumbra-lang`. O repositório da linguagem contém compilador, VM, backend nativo, biblioteca padrão e pequenos exemplos de regressão. Este repositório contém apenas o produto de coleção de jogos.
+O aplicativo é separado do `Zumbra-lang`. O repositório da linguagem contém compilador, VM, backend C11, runtime e biblioteca padrão; este repositório contém o produto, seus módulos, testes e assets.
 
-## Camadas da aplicação
+## Camadas
 
 ```text
 src/main.zum
-├── ciclo de vida da aplicação desktop
-├── árvore retida de interface
-├── estado reativo do formulário, busca e ordenação
-└── roteamento de eventos da lista dinâmica
+├── lifecycle desktop e árvore retida de UI
+├── estados reativos, bindings e preferências
+├── modais, atalhos, notificações e file pickers
+└── roteamento de ações da lista dinâmica
 
 src/storage.zum
-├── migration SQLite
-├── criação, atualização e exclusão
-├── busca
-└── ordenação
+├── migrations SQLite
+├── CRUD, busca, filtros e ordenação
+├── duplicatas e estatísticas
+└── backup, restauração e integridade
+
+src/exchange.zum
+├── JSON versionado
+├── CSV com cabeçalho estável
+├── validação de registros
+└── relatório de importados, duplicados e inválidos
+
+src/preferences.zum
+├── valores padrão
+├── leitura recuperável
+└── escrita atômica em JSON
 ```
 
 ## Schema SQLite
+
+A migration 1 cria `games`. A migration 2 adiciona detalhes e índices:
 
 ```sql
 CREATE TABLE games (
@@ -31,10 +44,23 @@ CREATE TABLE games (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE games ADD COLUMN region TEXT NOT NULL DEFAULT '';
+ALTER TABLE games ADD COLUMN media TEXT NOT NULL DEFAULT '';
+ALTER TABLE games ADD COLUMN condition TEXT NOT NULL DEFAULT '';
+ALTER TABLE games ADD COLUMN cover_path TEXT NOT NULL DEFAULT '';
 ```
 
-O banco pertence ao usuário atual do sistema operacional. Nenhuma conta, telemetria ou serviço remoto é necessário.
+Índices `NOCASE` cobrem nome, plataforma e franquia.
 
-## Ações dinâmicas
+## Eventos dinâmicos
 
-As linhas usam identificadores como `edit-game-42` e `delete-game-42`. O Zumbra 0.11.0 expõe `targetId` e `targetKind` nos callbacks de UI, permitindo que toda a lista utilize um callback genérico de edição e outro de exclusão.
+Cards usam IDs como `edit-game-42`, `delete-game-42` e `cover-game-42`. Os callbacks recebem `targetId` e `targetKind`, consultam dicionários de alvos e não criam closures capturando dados por card. Botões estáticos usam um dispatcher global por ID, mantendo compatibilidade com o backend nativo.
+
+## Segurança da restauração
+
+Antes de restaurar um banco escolhido, o aplicativo cria `before-restore.sqlite` na pasta de dados. A Zumbra valida o arquivo de origem com `PRAGMA quick_check` e substitui o banco de forma atômica somente após a validação.
+
+## Modelo local
+
+Banco, preferências e capas pertencem ao usuário do sistema operacional. O aplicativo não possui conta, sincronização, telemetria ou serviço remoto.
