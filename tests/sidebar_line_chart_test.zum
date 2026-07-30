@@ -1,0 +1,35 @@
+import "../vendor/zumbra/std/desktop.zum" as desktop;
+import "../vendor/zumbra/std/ui.zum" as ui;
+
+var app << desktop.app({"backend": "headless", "quitOnLastWindow": false});
+var window << app.window({"title": "Sidebar", "width": 1000, "height": 600});
+var input << ui.input({"id": "menu-input", "value": "Final Fantasy IX", "height": 40});
+var menu << ui.navigation({"id": "menu", "placement": "left", "expandedSize": 350, "padding": 18, "border": true}, [
+    ui.columnWith({"grow": 1, "gap": 8}, [
+        ui.textWith("Cadastrar jogo", {"id": "menu-title"}),
+        input
+    ])
+]);
+var chart << ui.chart({"id": "line", "grow": 1});
+ui.lineChart(chart, {"values": [1, 1], "labels": ["PlayStation 1", "PS1"], "legend": true});
+var context << ui.mount(app, window, ui.rowWith({"grow": 1, "gap": 18}, [
+    menu,
+    ui.containerWith({"grow": 1}, [chart])
+]), {});
+
+fct byId(items, id) {
+    for item in items {
+        if (item["id"] == id) { return item; }
+    }
+    {};
+}
+
+var items << ui.snapshot(context)["items"];
+show(byId(items, "menu")["height"]);
+show(byId(items, "menu-title")["height"] > 0);
+show(byId(items, "menu-input")["height"]);
+var command << ui.get(chart, "commands")[0];
+show(command["kind"]);
+show(command["values"]["labels"][0]);
+context.close();
+app.close();

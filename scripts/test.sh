@@ -15,6 +15,7 @@ for source in \
   tests/dialog_layout_test.zum \
   tests/navigation_charts_test.zum \
   tests/final_polish_test.zum \
+  tests/sidebar_line_chart_test.zum \
   tests/stress_test.zum \
   tests/ui_event_test.zum \
   tests/layout_test.zum; do
@@ -87,6 +88,19 @@ if [[ "$FINAL_POLISH_OUTPUT" != "$FINAL_POLISH_EXPECTED" ]]; then
   exit 1
 fi
 
+SIDEBAR_LINE_OUTPUT="$("$ZUMBRA_BIN" run tests/sidebar_line_chart_test.zum)"
+SIDEBAR_LINE_EXPECTED=$'600
+true
+40
+lineChart
+PlayStation 1'
+if [[ "$SIDEBAR_LINE_OUTPUT" != "$SIDEBAR_LINE_EXPECTED" ]]; then
+  printf 'Unexpected sidebar/line chart test output:
+%s
+' "$SIDEBAR_LINE_OUTPUT" >&2
+  exit 1
+fi
+
 STRESS_OUTPUT="$("$ZUMBRA_BIN" run tests/stress_test.zum)"
 STRESS_EXPECTED=$'500\n500\n500\ntrue'
 if [[ "$STRESS_OUTPUT" != "$STRESS_EXPECTED" ]]; then
@@ -128,6 +142,7 @@ run_native_test modal_accessibility "$MODAL_EXPECTED"
 run_native_test dialog_layout "$DIALOG_EXPECTED"
 run_native_test navigation_charts "$NAVIGATION_EXPECTED"
 run_native_test final_polish "$FINAL_POLISH_EXPECTED"
+run_native_test sidebar_line_chart "$SIDEBAR_LINE_EXPECTED"
 run_native_test stress "$STRESS_EXPECTED"
 run_native_test ui_event "$UI_EXPECTED"
 run_native_test layout "$LAYOUT_EXPECTED"
