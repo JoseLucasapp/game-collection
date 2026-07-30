@@ -1,0 +1,48 @@
+import "../vendor/zumbra/std/desktop.zum" as desktop;
+import "../vendor/zumbra/std/ui.zum" as ui;
+
+var app << desktop.app({"backend": "headless", "name": "Compact details"});
+var window << app.window({"title": "Details", "width": 1180, "height": 800});
+var image << ui.image({"id": "preview", "path": "", "fit": "contain", "width": 270, "height": 270});
+var modal << ui.modal({"id": "details-modal", "visible": true, "width": 860, "height": 680, "padding": 22, "overflow": "hidden"}, [
+    ui.columnWith({"gap": 14, "grow": 1, "overflow": "hidden"}, [
+        ui.rowWith({"height": 40, "minHeight": 40}, [ui.text("Detalhes do jogo")]),
+        ui.rowWith({"id": "details-main", "gap": 20, "grow": 1, "overflow": "hidden"}, [
+            ui.columnWith({"id": "details-cover-panel", "gap": 12, "width": 292, "minWidth": 292, "overflow": "hidden"}, [
+                ui.containerWith({"border": true, "padding": 10, "width": 292, "height": 292, "overflow": "hidden"}, [image]),
+                ui.rowWith({"height": 40}, [ui.buttonWith({"text": "Abrir imagem", "width": 138})])
+            ]),
+            ui.columnWith({"id": "details-info-panel", "gap": 10, "grow": 1, "overflow": "hidden"}, [
+                ui.textWith("Final Fantasy IX", {"height": 32}),
+                ui.containerWith({"id": "details-metadata", "border": true, "padding": 12, "height": 250, "overflow": "hidden"}, [ui.text("Metadados")]),
+                ui.textWith("Link", {"height": 20}),
+                ui.containerWith({"border": true, "padding": 10, "height": 62, "overflow": "hidden"}, [ui.text("Nenhum link cadastrado.")]),
+                ui.textWith("Descrição", {"height": 20}),
+                ui.containerWith({"id": "details-description", "border": true, "padding": 12, "grow": 1, "minHeight": 120, "overflowY": "auto", "scrollbarOverlay": true, "scrollbarAvoidContent": true}, [ui.text("Sem descrição cadastrada.")])
+            ])
+        ])
+    ])
+]);
+var context << ui.mount(app, window, ui.containerWith({"grow": 1}, [modal]), {});
+var items << context.snapshot()["items"];
+var dialog << {};
+var cover << {};
+var info << {};
+var metadata << {};
+var description << {};
+for item in items {
+    if (item["id"] == "details-modal") { dialog << item; }
+    if (item["id"] == "details-cover-panel") { cover << item; }
+    if (item["id"] == "details-info-panel") { info << item; }
+    if (item["id"] == "details-metadata") { metadata << item; }
+    if (item["id"] == "details-description") { description << item; }
+}
+show(dialog["width"] == 860);
+show(dialog["height"] == 680);
+show(cover["width"] == 292);
+show(info["x"] > cover["x"] + cover["width"]);
+show(metadata["height"] == 250);
+show(description["y"] > metadata["y"] + metadata["height"]);
+show(description["height"] >= 120);
+context.close();
+app.close();

@@ -17,6 +17,7 @@ for source in \
   tests/final_polish_test.zum \
   tests/sidebar_line_chart_test.zum \
   tests/details_text_editing_test.zum \
+  tests/details_layout_compact_test.zum \
   tests/stress_test.zum \
   tests/ui_event_test.zum \
   tests/layout_test.zum; do
@@ -130,6 +131,13 @@ if [[ "$DETAILS_TEXT_OUTPUT" != "$DETAILS_TEXT_EXPECTED" ]]; then
   exit 1
 fi
 
+DETAILS_LAYOUT_OUTPUT="$("$ZUMBRA_BIN" run tests/details_layout_compact_test.zum)"
+DETAILS_LAYOUT_EXPECTED=$'true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue'
+if [[ "$DETAILS_LAYOUT_OUTPUT" != "$DETAILS_LAYOUT_EXPECTED" ]]; then
+  printf 'Unexpected compact details layout test output:\n%s\n' "$DETAILS_LAYOUT_OUTPUT" >&2
+  exit 1
+fi
+
 STRESS_OUTPUT="$("$ZUMBRA_BIN" run tests/stress_test.zum)"
 STRESS_EXPECTED=$'500\n500\n500\ntrue'
 if [[ "$STRESS_OUTPUT" != "$STRESS_EXPECTED" ]]; then
@@ -173,6 +181,7 @@ run_native_test navigation_charts "$NAVIGATION_EXPECTED"
 run_native_test final_polish "$FINAL_POLISH_EXPECTED"
 run_native_test sidebar_line_chart "$SIDEBAR_LINE_EXPECTED"
 run_native_test details_text_editing "$DETAILS_TEXT_EXPECTED"
+run_native_test details_layout_compact "$DETAILS_LAYOUT_EXPECTED"
 run_native_test stress "$STRESS_EXPECTED"
 run_native_test ui_event "$UI_EXPECTED"
 run_native_test layout "$LAYOUT_EXPECTED"

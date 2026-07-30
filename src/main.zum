@@ -7,7 +7,7 @@ import "preferences.zum" as preferences;
 var application << desktop.app({
     "backend": "auto",
     "name": "Minha Coleção de Jogos",
-    "version": "0.2.5",
+    "version": "0.2.6",
     "identifier": "dev.zumbra.gamecollection",
     "quitOnLastWindow": true,
     "closeOnRequest": true
@@ -181,17 +181,17 @@ var statusText << ui.text("");
 var countText << ui.text("");
 var pendingDeleteText << ui.text("");
 var pendingRestoreText << ui.text("");
-var coverPreviewNameText << ui.text("");
-var coverPreviewImage << ui.image({"id": "cover-preview-image", "path": "", "fit": "contain", "grow": 1, "minHeight": 300, "accessibilityLabel": "Pré-visualização da capa"});
-var detailsPlatformText << ui.text("");
-var detailsFranchiseText << ui.text("");
-var detailsRegionText << ui.text("");
-var detailsMediaText << ui.text("");
-var detailsConditionText << ui.text("");
-var detailsPriceText << ui.text("");
-var detailsRatingText << ui.text("");
-var detailsDescriptionText << ui.text("");
-var detailsLinkText << ui.text("");
+var coverPreviewNameText << ui.textWith("", {"fontSize": 20, "fontWeight": "bold", "height": 32, "minHeight": 32, "textOverflow": "ellipsis"});
+var coverPreviewImage << ui.image({"id": "cover-preview-image", "path": "", "fit": "contain", "width": 270, "minWidth": 270, "height": 270, "minHeight": 270, "accessibilityLabel": "Pré-visualização da capa"});
+var detailsPlatformText << ui.textWith("", {"fontSize": 13, "height": 24, "minHeight": 24, "textOverflow": "ellipsis"});
+var detailsFranchiseText << ui.textWith("", {"fontSize": 13, "height": 24, "minHeight": 24, "textOverflow": "ellipsis"});
+var detailsRegionText << ui.textWith("", {"fontSize": 13, "height": 24, "minHeight": 24, "textOverflow": "ellipsis"});
+var detailsMediaText << ui.textWith("", {"fontSize": 13, "height": 24, "minHeight": 24, "textOverflow": "ellipsis"});
+var detailsConditionText << ui.textWith("", {"fontSize": 13, "height": 24, "minHeight": 24, "textOverflow": "ellipsis"});
+var detailsPriceText << ui.textWith("", {"fontSize": 13, "height": 24, "minHeight": 24, "textOverflow": "ellipsis"});
+var detailsRatingText << ui.textWith("", {"fontSize": 13, "height": 24, "minHeight": 24, "textOverflow": "ellipsis"});
+var detailsDescriptionText << ui.textWith("", {"fontSize": 13, "wrapWidth": 410});
+var detailsLinkText << ui.textWith("", {"fontSize": 13, "height": 42, "minHeight": 42, "wrapWidth": 390});
 var statsTotalText << ui.text("");
 var statsPlatformCountText << ui.text("");
 var statsFranchiseCountText << ui.text("");
@@ -270,6 +270,18 @@ fct statRow(labelText, valueText) {
         ui.spacer(1),
         valueText
     ]);
+}
+
+fct detailRow(labelText, valueText) {
+    ui.rowWith({"align": "center", "gap": 12, "height": 30, "minHeight": 30, "overflow": "hidden"}, [
+        ui.textWith(labelText, {"fontSize": 13, "fontWeight": "bold", "width": 92, "minWidth": 92, "height": 24, "minHeight": 24}),
+        ui.containerWith({"grow": 1, "height": 24, "minHeight": 24, "overflow": "hidden", "justify": "center"}, [valueText])
+    ]);
+}
+
+fct detailsValue(value, fallback) {
+    if (sizeOf(value) == 0) { return fallback; }
+    value;
 }
 
 fct label(text) {
@@ -534,34 +546,39 @@ ui.bind(openDetailsLinkButton, "visible", detailsHasLinkState);
 var detailsModal << ui.modal({
     "id": "details-modal",
     "visible": false,
-    "width": 820,
-    "height": 700,
+    "width": 860,
+    "height": 680,
     "padding": 22,
     "overflow": "hidden",
     "accessibilityLabel": "Detalhes do jogo"
 }, [
-    ui.columnWith({"gap": 14, "grow": 1}, [
+    ui.columnWith({"gap": 14, "grow": 1, "overflow": "hidden"}, [
         modalHeader("Detalhes do jogo", "close-details-x", "collection_close_details"),
-        ui.rowWith({"gap": 18, "grow": 1, "minHeight": 420}, [
-            ui.columnWith({"gap": 10, "width": 300, "minWidth": 300}, [
-                ui.containerWith({"border": true, "padding": 10, "width": 300, "height": 330, "minHeight": 330, "overflow": "hidden"}, [coverPreviewImage]),
-                ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
+        ui.rowWith({"id": "details-main", "gap": 20, "grow": 1, "overflow": "hidden"}, [
+            ui.columnWith({"id": "details-cover-panel", "gap": 12, "width": 292, "minWidth": 292, "overflow": "hidden"}, [
+                ui.containerWith({"border": true, "padding": 10, "width": 292, "minWidth": 292, "height": 292, "minHeight": 292, "align": "center", "justify": "center", "overflow": "hidden"}, [coverPreviewImage]),
+                ui.rowWith({"gap": 10, "height": 40, "minHeight": 40, "align": "center"}, [
                     openDetailsImageButton,
                     openDetailsLinkButton
                 ])
             ]),
-            ui.columnWith({"gap": 8, "grow": 1, "overflowY": "auto", "scrollbarOverlay": true, "scrollbarAvoidContent": true, "scrollbarTrack": "transparent", "scrollStep": 48}, [
+            ui.columnWith({"id": "details-info-panel", "gap": 10, "grow": 1, "overflow": "hidden"}, [
                 coverPreviewNameText,
-                statRow("Plataforma", detailsPlatformText),
-                statRow("Franquia", detailsFranchiseText),
-                statRow("Região", detailsRegionText),
-                statRow("Mídia", detailsMediaText),
-                statRow("Condição", detailsConditionText),
-                statRow("Valor", detailsPriceText),
-                statRow("Nota", detailsRatingText),
-                label("Link"), detailsLinkText,
-                label("Descrição"),
-                ui.containerWith({"border": true, "padding": 12, "grow": 1, "minHeight": 180, "overflowY": "auto", "scrollbarOverlay": true, "scrollbarAvoidContent": true, "scrollbarTrack": "transparent"}, [detailsDescriptionText])
+                ui.containerWith({"id": "details-metadata", "border": true, "padding": 12, "height": 250, "minHeight": 250, "overflow": "hidden"}, [
+                    ui.columnWith({"gap": 2, "grow": 1, "overflow": "hidden"}, [
+                        detailRow("Plataforma", detailsPlatformText),
+                        detailRow("Franquia", detailsFranchiseText),
+                        detailRow("Região", detailsRegionText),
+                        detailRow("Mídia", detailsMediaText),
+                        detailRow("Condição", detailsConditionText),
+                        detailRow("Valor", detailsPriceText),
+                        detailRow("Nota", detailsRatingText)
+                    ])
+                ]),
+                ui.textWith("Link", {"fontSize": 13, "fontWeight": "bold", "height": 20, "minHeight": 20}),
+                ui.containerWith({"border": true, "padding": 10, "height": 62, "minHeight": 62, "overflow": "hidden"}, [detailsLinkText]),
+                ui.textWith("Descrição", {"fontSize": 13, "fontWeight": "bold", "height": 20, "minHeight": 20}),
+                ui.containerWith({"id": "details-description", "border": true, "padding": 12, "grow": 1, "minHeight": 120, "overflowY": "auto", "scrollbarOverlay": true, "scrollbarAvoidContent": true, "scrollbarTrack": "transparent", "scrollStep": 36}, [detailsDescriptionText])
             ])
         ])
     ])
@@ -689,15 +706,15 @@ var openDetails << fct(event) {
     var game << detailTargets[event["targetId"]];
     coverPreviewNameState.set(game["name"]);
     coverPreviewPathState.set(game["cover_path"]);
-    detailsPlatformState.set(game["platform"]);
-    detailsFranchiseState.set(game["franchise"]);
-    detailsRegionState.set(game["region"]);
-    detailsMediaState.set(game["media"]);
-    detailsConditionState.set(game["condition"]);
-    detailsPriceState.set(game["price"]);
-    detailsRatingState.set(game["rating"]);
-    detailsDescriptionState.set(game["description"]);
-    detailsLinkState.set(game["link"]);
+    detailsPlatformState.set(detailsValue(game["platform"], "Não informado"));
+    detailsFranchiseState.set(detailsValue(game["franchise"], "Não informada"));
+    detailsRegionState.set(detailsValue(game["region"], "Não informada"));
+    detailsMediaState.set(detailsValue(game["media"], "Não informada"));
+    detailsConditionState.set(detailsValue(game["condition"], "Não informada"));
+    detailsPriceState.set(detailsValue(game["price"], "Não informado"));
+    detailsRatingState.set(detailsValue(game["rating"], "Não informada"));
+    detailsDescriptionState.set(detailsValue(game["description"], "Sem descrição cadastrada."));
+    detailsLinkState.set(detailsValue(game["link"], "Nenhum link cadastrado."));
     detailsHasCoverState.set(sizeOf(game["cover_path"]) > 0);
     detailsHasLinkState.set(sizeOf(game["link"]) > 0);
     detailsModalState.set(true);
