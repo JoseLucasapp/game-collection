@@ -1,0 +1,40 @@
+import "../vendor/zumbra/std/desktop.zum" as desktop;
+import "../vendor/zumbra/std/ui.zum" as ui;
+
+var application << desktop.app({"backend": "headless", "quitOnLastWindow": false});
+var window << application.window({"title": "Dialog layout", "width": 1200, "height": 800});
+var visible << ui.boolState(true);
+var image << ui.image({"id": "preview", "path": "cover.png", "fit": "contain", "grow": 1});
+var modal << ui.modal({
+    "id": "stats-dialog",
+    "visible": true,
+    "width": 620,
+    "height": 520,
+    "padding": 20,
+    "overflow": "hidden",
+    "backdropBlur": 6
+}, [
+    ui.columnWith({"grow": 1}, [
+        ui.rowWith({"height": 40}, [ui.text("Estatísticas"), ui.spacer(1), ui.buttonWith({"id": "close-x", "text": "X", "width": 36})]),
+        image
+    ])
+]);
+ui.bind(modal, "visible", visible);
+var root << ui.containerWith({"grow": 1}, [modal]);
+var context << ui.mount(application, window, root, {});
+var items << ui.snapshot(context)["items"];
+var modalItem << {};
+var imageItem << {};
+for item in items {
+    if (item["id"] == "stats-dialog") { modalItem << item; }
+    if (item["id"] == "preview") { imageItem << item; }
+}
+show(modalItem["x"]);
+show(modalItem["y"]);
+show(modalItem["width"]);
+show(modalItem["height"]);
+show(ui.get(modal, "overflow"));
+show(ui.get(modal, "backdropBlur"));
+show(ui.get(image, "fit"));
+context.close();
+application.close();
