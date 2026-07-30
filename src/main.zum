@@ -7,7 +7,7 @@ import "preferences.zum" as preferences;
 var application << desktop.app({
     "backend": "auto",
     "name": "Minha Coleção de Jogos",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "identifier": "dev.zumbra.gamecollection",
     "quitOnLastWindow": true,
     "closeOnRequest": true
@@ -43,6 +43,10 @@ var regionState << ui.stringState("");
 var mediaState << ui.stringState("Física");
 var conditionState << ui.stringState("Usado");
 var coverPathState << ui.stringState("");
+var priceState << ui.stringState("");
+var descriptionState << ui.stringState("");
+var linkState << ui.stringState("");
+var ratingState << ui.stringState("");
 var searchState << ui.stringState("");
 var sortState << ui.stringState(loadedPreferences["sort"]);
 var platformFilterState << ui.stringState(initialPlatformFilter);
@@ -54,7 +58,7 @@ var deleteModalState << ui.boolState(false);
 var dataModalState << ui.boolState(false);
 var restoreModalState << ui.boolState(false);
 var statsModalState << ui.boolState(false);
-var coverModalState << ui.boolState(false);
+var detailsModalState << ui.boolState(false);
 var sidebarVisibleState << ui.boolState(true);
 var sidebarSizeState << ui.intState(350);
 var mainLayoutGapState << ui.intState(18);
@@ -64,6 +68,17 @@ var pendingDeleteName << ui.stringState("");
 var pendingRestorePath << ui.stringState("");
 var coverPreviewNameState << ui.stringState("");
 var coverPreviewPathState << ui.stringState("");
+var detailsPlatformState << ui.stringState("");
+var detailsFranchiseState << ui.stringState("");
+var detailsRegionState << ui.stringState("");
+var detailsMediaState << ui.stringState("");
+var detailsConditionState << ui.stringState("");
+var detailsPriceState << ui.stringState("");
+var detailsRatingState << ui.stringState("");
+var detailsDescriptionState << ui.stringState("");
+var detailsLinkState << ui.stringState("");
+var detailsHasCoverState << ui.boolState(false);
+var detailsHasLinkState << ui.boolState(false);
 var statsTotalState << ui.stringState("0");
 var statsPlatformCountState << ui.stringState("0");
 var statsFranchiseCountState << ui.stringState("0");
@@ -97,6 +112,10 @@ var conditionSelect << ui.select({
     "accessibilityLabel": "Condição"
 });
 var coverPathInput << ui.input({"id": "game-cover", "cursor": "text", "placeholder": "Caminho de uma imagem local", "grow": 1, "height": 40, "minHeight": 40, "accessibilityLabel": "Capa local"});
+var priceInput << ui.input({"id": "game-price", "cursor": "text", "placeholder": "Ex.: R$ 149,90", "height": 40, "minHeight": 40, "accessibilityLabel": "Valor"});
+var ratingInput << ui.input({"id": "game-rating", "cursor": "text", "placeholder": "Ex.: 9,5 ou 5 estrelas", "height": 40, "minHeight": 40, "accessibilityLabel": "Nota"});
+var linkInput << ui.input({"id": "game-link", "cursor": "text", "placeholder": "Link da loja, página ou referência", "height": 40, "minHeight": 40, "accessibilityLabel": "Link"});
+var descriptionInput << ui.textarea({"id": "game-description", "cursor": "text", "placeholder": "Descrição, observações ou informações da edição", "height": 92, "minHeight": 92, "accessibilityLabel": "Descrição"});
 var searchInput << ui.input({"id": "game-search", "cursor": "text", "placeholder": "Buscar nome, plataforma, franquia ou detalhes", "grow": 1, "height": 40, "minHeight": 40, "accessibilityLabel": "Buscar jogos"});
 var sortSelect << ui.select({
     "id": "game-sort",
@@ -147,6 +166,10 @@ ui.bind(regionInput, "value", regionState);
 ui.bind(mediaSelect, "value", mediaState);
 ui.bind(conditionSelect, "value", conditionState);
 ui.bind(coverPathInput, "value", coverPathState);
+ui.bind(priceInput, "value", priceState);
+ui.bind(ratingInput, "value", ratingState);
+ui.bind(linkInput, "value", linkState);
+ui.bind(descriptionInput, "value", descriptionState);
 ui.bind(searchInput, "value", searchState);
 ui.bind(sortSelect, "value", sortState);
 ui.bind(platformFilterSelect, "value", platformFilterState);
@@ -159,7 +182,16 @@ var countText << ui.text("");
 var pendingDeleteText << ui.text("");
 var pendingRestoreText << ui.text("");
 var coverPreviewNameText << ui.text("");
-var coverPreviewImage << ui.image({"id": "cover-preview-image", "path": "", "fit": "contain", "grow": 1, "minHeight": 360, "accessibilityLabel": "Pré-visualização da capa"});
+var coverPreviewImage << ui.image({"id": "cover-preview-image", "path": "", "fit": "contain", "grow": 1, "minHeight": 300, "accessibilityLabel": "Pré-visualização da capa"});
+var detailsPlatformText << ui.text("");
+var detailsFranchiseText << ui.text("");
+var detailsRegionText << ui.text("");
+var detailsMediaText << ui.text("");
+var detailsConditionText << ui.text("");
+var detailsPriceText << ui.text("");
+var detailsRatingText << ui.text("");
+var detailsDescriptionText << ui.text("");
+var detailsLinkText << ui.text("");
 var statsTotalText << ui.text("");
 var statsPlatformCountText << ui.text("");
 var statsFranchiseCountText << ui.text("");
@@ -171,6 +203,15 @@ ui.bind(pendingDeleteText, "text", pendingDeleteName);
 ui.bind(pendingRestoreText, "text", pendingRestorePath);
 ui.bind(coverPreviewNameText, "text", coverPreviewNameState);
 ui.bind(coverPreviewImage, "path", coverPreviewPathState);
+ui.bind(detailsPlatformText, "text", detailsPlatformState);
+ui.bind(detailsFranchiseText, "text", detailsFranchiseState);
+ui.bind(detailsRegionText, "text", detailsRegionState);
+ui.bind(detailsMediaText, "text", detailsMediaState);
+ui.bind(detailsConditionText, "text", detailsConditionState);
+ui.bind(detailsPriceText, "text", detailsPriceState);
+ui.bind(detailsRatingText, "text", detailsRatingState);
+ui.bind(detailsDescriptionText, "text", detailsDescriptionState);
+ui.bind(detailsLinkText, "text", detailsLinkState);
 ui.bind(statsTotalText, "text", statsTotalState);
 ui.bind(statsPlatformCountText, "text", statsPlatformCountState);
 ui.bind(statsFranchiseCountText, "text", statsFranchiseCountState);
@@ -268,14 +309,16 @@ var gameList << ui.columnWith({
     "scrollStep": 116,
     "scrollbarWidth": 8,
     "scrollbarGutter": 4,
-    "scrollbarOverlay": true
+    "scrollbarOverlay": true,
+    "scrollbarAvoidContent": true,
+    "scrollbarTrack": "transparent"
 }, []);
 var currentGames << storage.list(db, "", loadedPreferences["sort"], "", "");
 var editTargets << {};
 var deleteTargets << {};
-var coverTargets << {};
+var detailTargets << {};
 
-var expandedSidebarContent << ui.columnWith({"gap": 8, "grow": 1, "overflowY": "auto", "scrollStep": 64, "scrollbarWidth": 8, "scrollbarGutter": 4, "scrollbarOverlay": true}, [
+var expandedSidebarContent << ui.columnWith({"gap": 8, "grow": 1, "overflowY": "auto", "scrollStep": 64, "scrollbarWidth": 8, "scrollbarGutter": 4, "scrollbarOverlay": true, "scrollbarAvoidContent": true, "scrollbarTrack": "transparent"}, [
     ui.containerWith({"height": 38, "minHeight": 38}, [
         ui.textWith("Cadastrar jogo", {"fontSize": 21, "fontWeight": "bold"})
     ]),
@@ -289,6 +332,10 @@ var expandedSidebarContent << ui.columnWith({"gap": 8, "grow": 1, "overflowY": "
     label("Condição"), conditionSelect,
     label("Capa local"),
     ui.rowWith({"gap": 8, "height": 40, "minHeight": 40}, [coverPathInput, actionButton("select-cover", "Escolher", "collection_pick_cover", 88)]),
+    label("Valor"), priceInput,
+    label("Nota"), ratingInput,
+    label("Link"), linkInput,
+    label("Descrição"), descriptionInput,
     ui.spacer(4),
     ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
         actionButton("clear-game", "Limpar", "collection_clear", 139),
@@ -479,30 +526,51 @@ var statsModal << ui.modal({
 ]);
 ui.bind(statsModal, "visible", statsModalState);
 
-var coverModal << ui.modal({
-    "id": "cover-modal",
+var openDetailsImageButton << actionButton("open-cover-external", "Abrir imagem", "collection_open_cover_external", 138);
+var openDetailsLinkButton << actionButton("open-game-link", "Abrir link", "collection_open_game_link", 138);
+ui.bind(openDetailsImageButton, "visible", detailsHasCoverState);
+ui.bind(openDetailsLinkButton, "visible", detailsHasLinkState);
+
+var detailsModal << ui.modal({
+    "id": "details-modal",
     "visible": false,
-    "width": 680,
-    "height": 680,
-    "padding": 20,
+    "width": 820,
+    "height": 700,
+    "padding": 22,
     "overflow": "hidden",
-    "accessibilityLabel": "Visualização da capa"
+    "accessibilityLabel": "Detalhes do jogo"
 }, [
-    ui.columnWith({"gap": 12, "grow": 1}, [
-        modalHeader("Capa do jogo", "close-cover-x", "collection_close_cover"),
-        ui.containerWith({"height": 28, "minHeight": 28}, [coverPreviewNameText]),
-        ui.containerWith({"border": true, "padding": 12, "grow": 1, "minHeight": 440}, [coverPreviewImage]),
-        ui.rowWith({"height": 40, "minHeight": 40}, [
-            ui.spacer(1),
-            actionButton("open-cover-external", "Abrir externamente", "collection_open_cover_external", 160)
+    ui.columnWith({"gap": 14, "grow": 1}, [
+        modalHeader("Detalhes do jogo", "close-details-x", "collection_close_details"),
+        ui.rowWith({"gap": 18, "grow": 1, "minHeight": 420}, [
+            ui.columnWith({"gap": 10, "width": 300, "minWidth": 300}, [
+                ui.containerWith({"border": true, "padding": 10, "width": 300, "height": 330, "minHeight": 330, "overflow": "hidden"}, [coverPreviewImage]),
+                ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
+                    openDetailsImageButton,
+                    openDetailsLinkButton
+                ])
+            ]),
+            ui.columnWith({"gap": 8, "grow": 1, "overflowY": "auto", "scrollbarOverlay": true, "scrollbarAvoidContent": true, "scrollbarTrack": "transparent", "scrollStep": 48}, [
+                coverPreviewNameText,
+                statRow("Plataforma", detailsPlatformText),
+                statRow("Franquia", detailsFranchiseText),
+                statRow("Região", detailsRegionText),
+                statRow("Mídia", detailsMediaText),
+                statRow("Condição", detailsConditionText),
+                statRow("Valor", detailsPriceText),
+                statRow("Nota", detailsRatingText),
+                label("Link"), detailsLinkText,
+                label("Descrição"),
+                ui.containerWith({"border": true, "padding": 12, "grow": 1, "minHeight": 180, "overflowY": "auto", "scrollbarOverlay": true, "scrollbarAvoidContent": true, "scrollbarTrack": "transparent"}, [detailsDescriptionText])
+            ])
         ])
     ])
 ]);
-ui.bind(coverModal, "visible", coverModalState);
+ui.bind(detailsModal, "visible", detailsModalState);
 
 var mainLayout << ui.rowWith({"padding": 18, "gap": 18, "grow": 1}, [sidebar, collectionPanel]);
 ui.bind(mainLayout, "gap", mainLayoutGapState);
-var root << ui.containerWith({"grow": 1}, [mainLayout, deleteModal, dataModal, restoreModal, statsModal, coverModal]);
+var root << ui.containerWith({"grow": 1}, [mainLayout, deleteModal, dataModal, restoreModal, statsModal, detailsModal]);
 var initialTheme << "light";
 if (loadedPreferences["dark_mode"]) { initialTheme << "dark"; }
 var context << ui.mount(application, window, root, {"theme": ui.theme(initialTheme)});
@@ -529,6 +597,10 @@ var clearForm << fct() {
     mediaState.set("Física");
     conditionState.set("Usado");
     coverPathState.set("");
+    priceState.set("");
+    descriptionState.set("");
+    linkState.set("");
+    ratingState.set("");
     statusState.set("Novo jogo");
     context.focus(nameInput);
 };
@@ -545,7 +617,11 @@ var saveGame << fct() {
         "region": regionState.get(),
         "media": mediaState.get(),
         "condition": conditionState.get(),
-        "cover_path": coverPathState.get()
+        "cover_path": coverPathState.get(),
+        "price": priceState.get(),
+        "description": descriptionState.get(),
+        "link": linkState.get(),
+        "rating": ratingState.get()
     };
     if (sizeOf(game["name"]) == 0) {
         statusState.set("Informe o nome do jogo");
@@ -575,6 +651,10 @@ var saveGame << fct() {
     mediaState.set("Física");
     conditionState.set("Usado");
     coverPathState.set("");
+    priceState.set("");
+    descriptionState.set("");
+    linkState.set("");
+    ratingState.set("");
     requestRefresh();
     true;
 };
@@ -589,6 +669,10 @@ var editGame << fct(event) {
     mediaState.set(game["media"]);
     conditionState.set(game["condition"]);
     coverPathState.set(game["cover_path"]);
+    priceState.set(game["price"]);
+    descriptionState.set(game["description"]);
+    linkState.set(game["link"]);
+    ratingState.set(game["rating"]);
     statusState.set("Editando " + game["name"]);
     context.focus(nameInput);
 };
@@ -601,14 +685,23 @@ var askDeleteGame << fct(event) {
     context.focus(ui.find(context, "cancel-delete"));
 };
 
-var openCover << fct(event) {
-    var game << coverTargets[event["targetId"]];
-    if (sizeOf(game["cover_path"]) > 0) {
-        coverPreviewNameState.set(game["name"]);
-        coverPreviewPathState.set(game["cover_path"]);
-        coverModalState.set(true);
-        context.focus(ui.find(context, "close-cover-x"));
-    }
+var openDetails << fct(event) {
+    var game << detailTargets[event["targetId"]];
+    coverPreviewNameState.set(game["name"]);
+    coverPreviewPathState.set(game["cover_path"]);
+    detailsPlatformState.set(game["platform"]);
+    detailsFranchiseState.set(game["franchise"]);
+    detailsRegionState.set(game["region"]);
+    detailsMediaState.set(game["media"]);
+    detailsConditionState.set(game["condition"]);
+    detailsPriceState.set(game["price"]);
+    detailsRatingState.set(game["rating"]);
+    detailsDescriptionState.set(game["description"]);
+    detailsLinkState.set(game["link"]);
+    detailsHasCoverState.set(sizeOf(game["cover_path"]) > 0);
+    detailsHasLinkState.set(sizeOf(game["link"]) > 0);
+    detailsModalState.set(true);
+    context.focus(ui.find(context, "close-details-x"));
 };
 
 var refreshCollection << fct(event) {
@@ -637,7 +730,7 @@ var refreshCollection << fct(event) {
     );
     editTargets << {};
     deleteTargets << {};
-    coverTargets << {};
+    detailTargets << {};
     countState.set(toString(sizeOf(currentGames)) + " exibidos • " + toString(storage.count(db)) + " total");
 
     if (sizeOf(currentGames) == 0) {
@@ -651,7 +744,7 @@ var refreshCollection << fct(event) {
         var rowId << "game-row-" + toString(gameId);
         var editId << "edit-game-" + toString(gameId);
         var deleteId << "delete-game-" + toString(gameId);
-        var coverId << "cover-game-" + toString(gameId);
+        var detailsId << "details-game-" + toString(gameId);
         var franchiseLabel << game["franchise"];
         var details << "";
         if (sizeOf(franchiseLabel) == 0) { franchiseLabel << "Sem franquia"; }
@@ -668,18 +761,26 @@ var refreshCollection << fct(event) {
 
         editTargets[editId] << game;
         deleteTargets[deleteId] << game;
-        coverTargets[coverId] << game;
+        detailTargets[detailsId] << game;
 
-        var cardRow << ui.rowWith({"gap": 8, "align": "center", "height": 92, "minHeight": 92}, [
-            ui.columnWith({"gap": 0, "grow": 1, "height": 80, "minHeight": 80, "justify": "start"}, [
-                ui.textWith(game["name"], {"fontSize": 17, "fontWeight": "bold", "height": 40, "minHeight": 40, "wrapWidth": 310}),
-                ui.textWith(game["platform"] + " • " + franchiseLabel, {"fontSize": 13, "color": "muted", "height": 20, "minHeight": 20}),
-                ui.textWith(details, {"fontSize": 12, "color": "muted", "height": 20, "minHeight": 20})
-            ]),
-            ui.buttonWith({"id": coverId, "text": "Capa", "visible": sizeOf(game["cover_path"]) > 0, "width": 72, "minWidth": 72, "height": 36, "minHeight": 36, "onClick": openCover, "accessibilityLabel": "Abrir capa de " + game["name"]}),
-            ui.buttonWith({"id": editId, "text": "Editar", "width": 76, "minWidth": 76, "height": 36, "minHeight": 36, "onClick": editGame, "accessibilityLabel": "Editar " + game["name"]}),
-            ui.buttonWith({"id": deleteId, "text": "Excluir", "width": 76, "minWidth": 76, "height": 36, "minHeight": 36, "danger": true, "onClick": askDeleteGame, "accessibilityLabel": "Excluir " + game["name"]})
-        ]);
+        var cardChildren << [];
+        if (sizeOf(game["cover_path"]) > 0) {
+            addToArrayEnd(cardChildren, ui.containerWith({"width": 72, "minWidth": 72, "height": 72, "minHeight": 72, "border": true, "padding": 3, "overflow": "hidden"}, [
+                ui.image({"path": game["cover_path"], "fit": "cover", "width": 64, "height": 64, "accessibilityLabel": "Capa de " + game["name"]})
+            ]));
+        }
+        var summaryDetails << details;
+        if (sizeOf(game["price"]) > 0) { summaryDetails << summaryDetails + " • " + game["price"]; }
+        if (sizeOf(game["rating"]) > 0) { summaryDetails << summaryDetails + " • Nota " + game["rating"]; }
+        addToArrayEnd(cardChildren, ui.columnWith({"gap": 0, "grow": 1, "height": 80, "minHeight": 80, "justify": "start"}, [
+            ui.textWith(game["name"], {"fontSize": 17, "fontWeight": "bold", "height": 40, "minHeight": 40, "wrapWidth": 280}),
+            ui.textWith(game["platform"] + " • " + franchiseLabel, {"fontSize": 13, "color": "muted", "height": 20, "minHeight": 20}),
+            ui.textWith(summaryDetails, {"fontSize": 12, "color": "muted", "height": 20, "minHeight": 20, "textOverflow": "ellipsis"})
+        ]));
+        addToArrayEnd(cardChildren, ui.buttonWith({"id": detailsId, "text": "Ver mais", "width": 88, "minWidth": 88, "height": 36, "minHeight": 36, "onClick": openDetails, "accessibilityLabel": "Ver detalhes de " + game["name"]}));
+        addToArrayEnd(cardChildren, ui.buttonWith({"id": editId, "text": "Editar", "width": 76, "minWidth": 76, "height": 36, "minHeight": 36, "onClick": editGame, "accessibilityLabel": "Editar " + game["name"]}));
+        addToArrayEnd(cardChildren, ui.buttonWith({"id": deleteId, "text": "Excluir", "width": 76, "minWidth": 76, "height": 36, "minHeight": 36, "danger": true, "onClick": askDeleteGame, "accessibilityLabel": "Excluir " + game["name"]}));
+        var cardRow << ui.rowWith({"gap": 10, "align": "center", "height": 92, "minHeight": 92}, cardChildren);
 
         ui.add(gameList, ui.containerWith({
             "id": rowId,
@@ -791,16 +892,23 @@ application.on("collection_open_stats", fct(event) {
     context.focus(ui.find(context, "close-stats-x"));
 });
 application.on("collection_close_stats", fct(event) { event; statsModalState.set(false); });
-application.on("collection_close_cover", fct(event) {
+application.on("collection_close_details", fct(event) {
     event;
-    coverModalState.set(false);
+    detailsModalState.set(false);
     coverPreviewNameState.set("");
     coverPreviewPathState.set("");
+    detailsHasCoverState.set(false);
+    detailsHasLinkState.set(false);
 });
 application.on("collection_open_cover_external", fct(event) {
     event;
     var path << coverPreviewPathState.get();
     if (sizeOf(path) > 0) { desktop.openExternal(application, path); }
+});
+application.on("collection_open_game_link", fct(event) {
+    event;
+    var target << detailsLinkState.get();
+    if (sizeOf(target) > 0) { desktop.openExternal(application, target); }
 });
 application.on("collection_cancel_delete", fct(event) { event; deleteModalState.set(false); pendingDeleteId.set(0); });
 application.on("collection_confirm_delete", fct(event) {
@@ -920,7 +1028,7 @@ application.shortcut("Escape", fct(event) {
     dataModalState.set(false);
     restoreModalState.set(false);
     statsModalState.set(false);
-    coverModalState.set(false);
+    detailsModalState.set(false);
 });
 application.shortcut("Tab", fct(event) { event; context.focusNext(false); });
 application.shortcut("Shift+Tab", fct(event) { event; context.focusNext(true); });

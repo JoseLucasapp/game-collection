@@ -20,7 +20,9 @@
 - [x] Filtros por plataforma e franquia.
 - [x] Ordenação.
 - [x] Campos de região, mídia e condição.
-- [x] Capas locais.
+- [x] Campos de valor, nota, link e descrição.
+- [x] Capas locais e miniaturas quadradas nos cards.
+- [x] Modal completo de detalhes.
 - [x] Estatísticas.
 - [x] Integridade do banco.
 
@@ -52,8 +54,10 @@
 - [x] Botão permanente para ocultar e reabrir o menu.
 - [x] Cursores visuais `pointer` e `text` nos controles interativos.
 - [x] Caret visível e foco interno nos inputs e textareas.
+- [x] Navegação por setas, Home/End e posicionamento com mouse.
+- [x] Seleção, copiar, recortar e colar.
 - [x] Botões de ícone vetorial sem clipping.
-- [x] Scrollbar sobreposta sem quebrar margens simétricas.
+- [x] Scrollbar em gutter dedicado, sem atravessar controles ou cards.
 - [x] Estatísticas com seleção entre barras, pizza e linha.
 - [x] Tabela estruturada das principais plataformas.
 - [x] Estado vazio sem containers gráficos quebrados.

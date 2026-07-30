@@ -1,0 +1,12 @@
+import "../vendor/zumbra/std/desktop.zum" as desktop;
+import "../vendor/zumbra/std/ui.zum" as ui;
+var app << desktop.app({"backend": "headless", "name": "Details test"});
+var window << app.window({"title": "Details", "width": 640, "height": 420});
+var state << ui.stringState("Primeira letra");
+var input << ui.input({"id": "editable", "value": "Primeira letra", "width": 260, "height": 40});
+ui.bind(input, "value", state);
+var list << ui.columnWith({"id": "scroll", "height": 100, "overflowY": "auto", "scrollbarOverlay": true}, [input, ui.spacer(180)]);
+var context << ui.mount(app, window, list, {"theme": ui.theme("light")}); context.focus(input);
+context.dispatch({"type": "key_down", "key": "Home", "shortcut": "home"}); context.dispatch({"type": "key_down", "key": "Right", "shortcut": "shift+right"}); context.dispatch({"type": "text_input", "text": "X"});
+show(state.get()); show(input.get("caretIndex")); show(context.snapshot()["items"][0]["contentHeight"] > 100);
+context.close(); app.close();

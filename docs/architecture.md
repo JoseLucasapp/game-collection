@@ -33,7 +33,7 @@ src/preferences.zum
 
 ## Schema SQLite
 
-A migration 1 cria `games`. A migration 2 adiciona detalhes e índices:
+A migration 1 cria `games`. A migration 2 adiciona detalhes e índices. A migration 3 adiciona informações comerciais e de avaliação:
 
 ```sql
 CREATE TABLE games (
@@ -49,13 +49,17 @@ ALTER TABLE games ADD COLUMN region TEXT NOT NULL DEFAULT '';
 ALTER TABLE games ADD COLUMN media TEXT NOT NULL DEFAULT '';
 ALTER TABLE games ADD COLUMN condition TEXT NOT NULL DEFAULT '';
 ALTER TABLE games ADD COLUMN cover_path TEXT NOT NULL DEFAULT '';
+ALTER TABLE games ADD COLUMN price TEXT NOT NULL DEFAULT '';
+ALTER TABLE games ADD COLUMN description TEXT NOT NULL DEFAULT '';
+ALTER TABLE games ADD COLUMN link TEXT NOT NULL DEFAULT '';
+ALTER TABLE games ADD COLUMN rating TEXT NOT NULL DEFAULT '';
 ```
 
 Índices `NOCASE` cobrem nome, plataforma e franquia.
 
 ## Eventos dinâmicos
 
-Cards usam IDs como `edit-game-42`, `delete-game-42` e `cover-game-42`. Os callbacks recebem `targetId` e `targetKind`, consultam dicionários de alvos e não criam closures capturando dados por card. Botões estáticos usam um dispatcher global por ID, mantendo compatibilidade com o backend nativo.
+Cards usam IDs como `edit-game-42`, `delete-game-42` e `details-game-42`. Os callbacks recebem `targetId` e `targetKind`, consultam dicionários de alvos e não criam closures capturando dados por card. Botões estáticos usam um dispatcher global por ID, mantendo compatibilidade com o backend nativo.
 
 ## Segurança da restauração
 
@@ -64,3 +68,12 @@ Antes de restaurar um banco escolhido, o aplicativo cria `before-restore.sqlite`
 ## Modelo local
 
 Banco, preferências e capas pertencem ao usuário do sistema operacional. O aplicativo não possui conta, sincronização, telemetria ou serviço remoto.
+
+
+## Mídia e detalhes
+
+A listagem renderiza capas locais como miniaturas com `fit: "cover"`. O modal de detalhes usa `fit: "contain"`, preserva a imagem inteira e mantém ações externas separadas. Caminhos de imagem permanecem no filesystem; o SQLite armazena apenas o caminho.
+
+## Compatibilidade de intercâmbio
+
+JSON versão 2 e CSV de onze colunas preservam os campos novos. O importador continua aceitando JSON versão 1 e CSV de sete colunas, preenchendo os campos posteriores com strings vazias.

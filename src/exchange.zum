@@ -1,169 +1,83 @@
 import "../vendor/zumbra/std/data.zum" as data;
 import "storage.zum" as storage;
 
-fct textOrEmpty(value) {
-    value;
-}
-
-fct normalizedGame(value) {
-    {
-        "name": textOrEmpty(value["name"]),
-        "platform": textOrEmpty(value["platform"]),
-        "franchise": textOrEmpty(value["franchise"]),
-        "region": textOrEmpty(value["region"]),
-        "media": textOrEmpty(value["media"]),
-        "condition": textOrEmpty(value["condition"]),
-        "cover_path": textOrEmpty(value["cover_path"])
-    };
-}
-
-fct validGame(game) {
-    sizeOf(game["name"]) > 0 and sizeOf(game["platform"]) > 0;
-}
-
-fct importGames(db, games) {
-    var imported << 0;
-    var skipped << 0;
-    var invalid << 0;
-    for value in games {
-        var game << normalizedGame(value);
-        if (validGame(game)) {
-            if (storage.importOne(db, game)) {
-                imported << imported + 1;
-            } else {
-                skipped << skipped + 1;
-            }
-        } else {
-            invalid << invalid + 1;
-        }
+fct normalizedGame(value, version) {
+    var price << "";
+    var description << "";
+    var link << "";
+    var rating << "";
+    if (version >= 2) {
+        price << value["price"];
+        description << value["description"];
+        link << value["link"];
+        rating << value["rating"];
     }
     {
-        "ok": true,
-        "imported": imported,
-        "skipped": skipped,
-        "invalid": invalid,
-        "error": ""
+        "name": value["name"], "platform": value["platform"], "franchise": value["franchise"],
+        "region": value["region"], "media": value["media"], "condition": value["condition"],
+        "cover_path": value["cover_path"], "price": price, "description": description,
+        "link": link, "rating": rating
     };
+}
+
+fct validGame(game) { sizeOf(game["name"]) > 0 and sizeOf(game["platform"]) > 0; }
+
+fct importGames(db, games, version) {
+    var imported << 0; var skipped << 0; var invalid << 0;
+    for value in games {
+        var game << normalizedGame(value, version);
+        if (validGame(game)) {
+            if (storage.importOne(db, game)) { imported << imported + 1; } else { skipped << skipped + 1; }
+        } else { invalid << invalid + 1; }
+    }
+    {"ok": true, "imported": imported, "skipped": skipped, "invalid": invalid, "error": ""};
 }
 
 pub fct exportJson(db, path) {
-    data.writeJsonResult(path, {
-        "format": "zumbra-game-collection",
-        "version": 1,
-        "games": storage.all(db)
-    }, true);
+    data.writeJsonResult(path, {"format": "zumbra-game-collection", "version": 2, "games": storage.all(db)}, true);
 }
 
 pub fct importJson(db, path) {
     var readResult << data.readJsonResult(path);
     if (readResult["ok"]) {
         var document << readResult["value"];
-        if (document["format"] == "zumbra-game-collection" and document["version"] == 1) {
-            return importGames(db, document["games"]);
+        if (document["format"] == "zumbra-game-collection" and (document["version"] == 1 or document["version"] == 2)) {
+            return importGames(db, document["games"], document["version"]);
         }
-        return {
-            "ok": false,
-            "imported": 0,
-            "skipped": 0,
-            "invalid": 0,
-            "error": "Arquivo JSON não pertence à Minha Coleção de Jogos ou usa versão incompatível"
-        };
+        return {"ok": false, "imported": 0, "skipped": 0, "invalid": 0, "error": "O arquivo JSON não pertence à Minha Coleção de Jogos ou usa uma versão incompatível"};
     }
-    {
-        "ok": false,
-        "imported": 0,
-        "skipped": 0,
-        "invalid": 0,
-        "error": readResult["error"]
-    };
+    {"ok": false, "imported": 0, "skipped": 0, "invalid": 0, "error": readResult["error"]};
 }
 
 pub fct exportCsv(db, path) {
-    var rows << [["name", "platform", "franchise", "region", "media", "condition", "cover_path"]];
+    var rows << [["name", "platform", "franchise", "region", "media", "condition", "cover_path", "price", "description", "link", "rating"]];
     for game in storage.all(db) {
-        addToArrayEnd(rows, [
-            game["name"],
-            game["platform"],
-            game["franchise"],
-            game["region"],
-            game["media"],
-            game["condition"],
-            game["cover_path"]
-        ]);
+        addToArrayEnd(rows, [game["name"], game["platform"], game["franchise"], game["region"], game["media"], game["condition"], game["cover_path"], game["price"], game["description"], game["link"], game["rating"]]);
     }
     data.writeCsvResult(path, rows);
 }
 
 pub fct importCsv(db, path) {
     var readResult << data.readCsvResult(path);
-    if (readResult["ok"]) {
-        readResult;
-    } else {
-        return {
-            "ok": false,
-            "imported": 0,
-            "skipped": 0,
-            "invalid": 0,
-            "error": readResult["error"]
-        };
-    }
+    if (readResult["ok"]) { readResult; } else { return {"ok": false, "imported": 0, "skipped": 0, "invalid": 0, "error": readResult["error"]}; }
     var rows << readResult["value"];
-    if (sizeOf(rows) == 0 or sizeOf(rows[0]) < 7) {
-        return {
-            "ok": false,
-            "imported": 0,
-            "skipped": 0,
-            "invalid": 0,
-            "error": "CSV vazio ou sem o cabeçalho esperado"
-        };
-    }
+    if (sizeOf(rows) == 0 or sizeOf(rows[0]) < 7) { return {"ok": false, "imported": 0, "skipped": 0, "invalid": 0, "error": "CSV vazio ou sem o cabeçalho esperado"}; }
     var header << rows[0];
-    if (header[0] == "name" and header[1] == "platform" and header[2] == "franchise" and header[3] == "region" and header[4] == "media" and header[5] == "condition" and header[6] == "cover_path") {
-        header;
-    } else {
-        return {
-            "ok": false,
-            "imported": 0,
-            "skipped": 0,
-            "invalid": 0,
-            "error": "Cabeçalho CSV incompatível"
-        };
-    }
-    var imported << 0;
-    var skipped << 0;
-    var invalid << 0;
-    var index << 1;
+    var version << 0;
+    if (sizeOf(header) >= 11 and header[0] == "name" and header[6] == "cover_path" and header[7] == "price" and header[10] == "rating") { version << 2; }
+    if (sizeOf(header) == 7 and header[0] == "name" and header[6] == "cover_path") { version << 1; }
+    if (version == 0) { return {"ok": false, "imported": 0, "skipped": 0, "invalid": 0, "error": "Cabeçalho CSV incompatível"}; }
+    var imported << 0; var skipped << 0; var invalid << 0; var index << 1;
     while (index < sizeOf(rows)) {
         var row << rows[index];
-        if (sizeOf(row) < 7) {
-            invalid << invalid + 1;
-        } else {
-            var game << {
-                "name": row[0],
-                "platform": row[1],
-                "franchise": row[2],
-                "region": row[3],
-                "media": row[4],
-                "condition": row[5],
-                "cover_path": row[6]
-            };
-            if (validGame(game)) {
-                if (storage.importOne(db, game)) {
-                    imported << imported + 1;
-                } else {
-                    skipped << skipped + 1;
-                }
-            } else {
-                invalid << invalid + 1;
-            }
+        if (sizeOf(row) < 7) { invalid << invalid + 1; }
+        else {
+            var game << {"name": row[0], "platform": row[1], "franchise": row[2], "region": row[3], "media": row[4], "condition": row[5], "cover_path": row[6], "price": "", "description": "", "link": "", "rating": ""};
+            if (version == 2 and sizeOf(row) >= 11) { game["price"] << row[7]; game["description"] << row[8]; game["link"] << row[9]; game["rating"] << row[10]; }
+            if (validGame(game)) { if (storage.importOne(db, game)) { imported << imported + 1; } else { skipped << skipped + 1; } }
+            else { invalid << invalid + 1; }
         }
         index << index + 1;
     }
-    {
-        "ok": true,
-        "imported": imported,
-        "skipped": skipped,
-        "invalid": invalid,
-        "error": ""
-    };
+    {"ok": true, "imported": imported, "skipped": skipped, "invalid": invalid, "error": ""};
 }

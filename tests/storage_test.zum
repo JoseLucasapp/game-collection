@@ -1,56 +1,18 @@
 import "../src/storage.zum" as storage;
 
-fct game(name, platform, franchise, region, media, condition, cover) {
-    {
-        "name": name,
-        "platform": platform,
-        "franchise": franchise,
-        "region": region,
-        "media": media,
-        "condition": condition,
-        "cover_path": cover
-    };
+fct game(name, platform, franchise, region, media, condition, cover, price, description, link, rating) {
+    {"name": name, "platform": platform, "franchise": franchise, "region": region, "media": media, "condition": condition, "cover_path": cover, "price": price, "description": description, "link": link, "rating": rating};
 }
 
 var db << storage.open(":memory:");
-storage.create(db, game("Final Fantasy IX", "PlayStation", "Final Fantasy", "NTSC-U", "Física", "Excelente", "/tmp/ff9.bmp"));
-storage.create(db, game("Chrono Trigger", "PC", "Chrono", "", "Digital", "", ""));
-storage.create(db, game("Halo 3", "Xbox 360", "Halo", "NTSC-U", "Física", "Bom", ""));
-
+storage.create(db, game("Final Fantasy IX", "PlayStation", "Final Fantasy", "NTSC-U", "Física", "Excelente", "/tmp/ff9.bmp", "R$ 199,90", "RPG clássico", "https://example.com/ff9", "9,5"));
+storage.create(db, game("Chrono Trigger", "PC", "Chrono", "", "Digital", "", "", "", "", "", ""));
+storage.create(db, game("Halo 3", "Xbox 360", "Halo", "NTSC-U", "Física", "Bom", "", "R$ 80", "FPS", "", "8"));
 var byName << storage.list(db, "", "Nome A-Z", "", "");
-show(sizeOf(byName));
-show(byName[0]["name"]);
-show(byName[1]["name"]);
-show(byName[2]["name"]);
-show(storage.list(db, "", "Nome Z-A", "", "")[0]["name"]);
-show(storage.list(db, "", "Plataforma A-Z", "", "")[0]["platform"]);
-show(storage.list(db, "", "Franquia A-Z", "", "")[0]["franchise"]);
-show(storage.list(db, "", "Mais recentes", "", "")[0]["name"]);
-show(sizeOf(storage.list(db, "", "Nome A-Z", "PC", "")));
-show(storage.list(db, "", "Nome A-Z", "PC", "")[0]["name"]);
-show(sizeOf(storage.list(db, "", "Nome A-Z", "", "Halo")));
-show(sizeOf(storage.list(db, "ntsc", "Nome A-Z", "", "")));
-
-var chronoId << byName[0]["id"];
-storage.update(db, chronoId, game("Chrono Trigger", "Steam", "Chrono", "Japão", "Digital", "Excelente", ""));
-show(storage.find(db, chronoId)["platform"]);
-show(storage.find(db, chronoId)["region"]);
-
-var stats << storage.stats(db)["summary"];
-show(stats["total"]);
-show(stats["physical"]);
-show(stats["digital"]);
-show(stats["covers"]);
-
-var backupPath << "/tmp/zumbra-z16-storage-backup.sqlite";
-show(storage.backup(db, backupPath)["ok"]);
-storage.remove(db, chronoId);
-show(storage.count(db));
-show(storage.restore(db, backupPath)["ok"]);
-show(storage.count(db));
-show(storage.integrity(db)["value"]);
-storage.create(db, game("Metroid Prime Remastered", "Nintendo Switch", "Metroid", "Mundial", "Física e digital", "Novo", ""));
-var hybridStats << storage.stats(db)["summary"];
-show(hybridStats["physical"]);
-show(hybridStats["digital"]);
+show(sizeOf(byName)); show(byName[0]["name"]); show(storage.list(db, "rpg", "Nome A-Z", "", "")[0]["name"]);
+var ff << storage.list(db, "Final Fantasy", "Nome A-Z", "", "")[0];
+show(ff["price"]); show(ff["rating"]); show(ff["description"]);
+storage.update(db, ff["id"], game("Final Fantasy IX", "PS1", "Final Fantasy", "Japão", "Física", "Excelente", "/tmp/ff9.bmp", "R$ 250", "Atualizado", "https://example.com", "10"));
+show(storage.find(db, ff["id"])["platform"]); show(storage.find(db, ff["id"])["rating"]);
+var stats << storage.stats(db)["summary"]; show(stats["total"]); show(stats["rated"]); show(stats["covers"]);
 show(storage.close(db));

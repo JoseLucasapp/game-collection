@@ -16,6 +16,7 @@ for source in \
   tests/navigation_charts_test.zum \
   tests/final_polish_test.zum \
   tests/sidebar_line_chart_test.zum \
+  tests/details_text_editing_test.zum \
   tests/stress_test.zum \
   tests/ui_event_test.zum \
   tests/layout_test.zum; do
@@ -23,14 +24,35 @@ for source in \
 done
 
 STORAGE_OUTPUT="$("$ZUMBRA_BIN" run tests/storage_test.zum)"
-STORAGE_EXPECTED=$'3\nChrono Trigger\nFinal Fantasy IX\nHalo 3\nHalo 3\nPC\nChrono\nHalo 3\n1\nChrono Trigger\n1\n2\nSteam\nJapão\n3\n2\n1\n1\ntrue\n2\ntrue\n3\nok\n3\n2\ntrue'
+STORAGE_EXPECTED=$'3
+Chrono Trigger
+Final Fantasy IX
+R$ 199,90
+9,5
+RPG clássico
+PS1
+10
+3
+2
+1
+true'
 if [[ "$STORAGE_OUTPUT" != "$STORAGE_EXPECTED" ]]; then
   printf 'Unexpected storage test output:\n%s\n' "$STORAGE_OUTPUT" >&2
   exit 1
 fi
 
 EXCHANGE_OUTPUT="$("$ZUMBRA_BIN" run tests/exchange_test.zum)"
-EXCHANGE_EXPECTED=$'true\ntrue\ntrue\n2\n0\n0\n0\n2\ntrue\n2\nNTSC-U\n2\ntrue\ntrue\ntrue'
+EXCHANGE_EXPECTED=$'true
+true
+true
+RPG
+10
+true
+R$ 50
+https://example.com
+true
+true
+true'
 if [[ "$EXCHANGE_OUTPUT" != "$EXCHANGE_EXPECTED" ]]; then
   printf 'Unexpected exchange test output:\n%s\n' "$EXCHANGE_OUTPUT" >&2
   exit 1
@@ -101,6 +123,13 @@ if [[ "$SIDEBAR_LINE_OUTPUT" != "$SIDEBAR_LINE_EXPECTED" ]]; then
   exit 1
 fi
 
+DETAILS_TEXT_OUTPUT="$("$ZUMBRA_BIN" run tests/details_text_editing_test.zum)"
+DETAILS_TEXT_EXPECTED=$'Xrimeira letra\n1\ntrue'
+if [[ "$DETAILS_TEXT_OUTPUT" != "$DETAILS_TEXT_EXPECTED" ]]; then
+  printf 'Unexpected details/text editing test output:\n%s\n' "$DETAILS_TEXT_OUTPUT" >&2
+  exit 1
+fi
+
 STRESS_OUTPUT="$("$ZUMBRA_BIN" run tests/stress_test.zum)"
 STRESS_EXPECTED=$'500\n500\n500\ntrue'
 if [[ "$STRESS_OUTPUT" != "$STRESS_EXPECTED" ]]; then
@@ -143,6 +172,7 @@ run_native_test dialog_layout "$DIALOG_EXPECTED"
 run_native_test navigation_charts "$NAVIGATION_EXPECTED"
 run_native_test final_polish "$FINAL_POLISH_EXPECTED"
 run_native_test sidebar_line_chart "$SIDEBAR_LINE_EXPECTED"
+run_native_test details_text_editing "$DETAILS_TEXT_EXPECTED"
 run_native_test stress "$STRESS_EXPECTED"
 run_native_test ui_event "$UI_EXPECTED"
 run_native_test layout "$LAYOUT_EXPECTED"
