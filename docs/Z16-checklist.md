@@ -48,6 +48,15 @@
 - [x] Modais com isolamento de foco.
 - [x] Fundo bloqueado durante modais.
 - [x] Árvore de acessibilidade correta.
+- [x] Menu lateral totalmente retrátil com reflow responsivo.
+- [x] Botão permanente para ocultar e reabrir o menu.
+- [x] Cursores visuais `pointer` e `text` nos controles interativos.
+- [x] Caret visível e foco interno nos inputs e textareas.
+- [x] Botões de ícone vetorial sem clipping.
+- [x] Scrollbar sobreposta sem quebrar margens simétricas.
+- [x] Estatísticas com seleção entre barras, pizza e linha.
+- [x] Tabela estruturada das principais plataformas.
+- [x] Estado vazio sem containers gráficos quebrados.
 
 ## Qualidade e distribuição
 

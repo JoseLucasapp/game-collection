@@ -14,6 +14,7 @@ for source in \
   tests/modal_accessibility_test.zum \
   tests/dialog_layout_test.zum \
   tests/navigation_charts_test.zum \
+  tests/final_polish_test.zum \
   tests/stress_test.zum \
   tests/ui_event_test.zum \
   tests/layout_test.zum; do
@@ -21,7 +22,7 @@ for source in \
 done
 
 STORAGE_OUTPUT="$("$ZUMBRA_BIN" run tests/storage_test.zum)"
-STORAGE_EXPECTED=$'3\nChrono Trigger\nFinal Fantasy IX\nHalo 3\nHalo 3\nPC\nChrono\nHalo 3\n1\nChrono Trigger\n1\n2\nSteam\nJapão\n3\n2\n1\n1\ntrue\n2\ntrue\n3\nok\ntrue'
+STORAGE_EXPECTED=$'3\nChrono Trigger\nFinal Fantasy IX\nHalo 3\nHalo 3\nPC\nChrono\nHalo 3\n1\nChrono Trigger\n1\n2\nSteam\nJapão\n3\n2\n1\n1\ntrue\n2\ntrue\n3\nok\n3\n2\ntrue'
 if [[ "$STORAGE_OUTPUT" != "$STORAGE_EXPECTED" ]]; then
   printf 'Unexpected storage test output:\n%s\n' "$STORAGE_OUTPUT" >&2
   exit 1
@@ -69,6 +70,23 @@ if [[ "$NAVIGATION_OUTPUT" != "$NAVIGATION_EXPECTED" ]]; then
   exit 1
 fi
 
+FINAL_POLISH_OUTPUT="$("$ZUMBRA_BIN" run tests/final_polish_test.zum)"
+FINAL_POLISH_EXPECTED=$'368
+632
+true
+3
+pieChart
+true
+0
+1000
+false'
+if [[ "$FINAL_POLISH_OUTPUT" != "$FINAL_POLISH_EXPECTED" ]]; then
+  printf 'Unexpected final polish test output:
+%s
+' "$FINAL_POLISH_OUTPUT" >&2
+  exit 1
+fi
+
 STRESS_OUTPUT="$("$ZUMBRA_BIN" run tests/stress_test.zum)"
 STRESS_EXPECTED=$'500\n500\n500\ntrue'
 if [[ "$STRESS_OUTPUT" != "$STRESS_EXPECTED" ]]; then
@@ -109,6 +127,7 @@ run_native_test preferences "$PREFERENCES_EXPECTED"
 run_native_test modal_accessibility "$MODAL_EXPECTED"
 run_native_test dialog_layout "$DIALOG_EXPECTED"
 run_native_test navigation_charts "$NAVIGATION_EXPECTED"
+run_native_test final_polish "$FINAL_POLISH_EXPECTED"
 run_native_test stress "$STRESS_EXPECTED"
 run_native_test ui_event "$UI_EXPECTED"
 run_native_test layout "$LAYOUT_EXPECTED"

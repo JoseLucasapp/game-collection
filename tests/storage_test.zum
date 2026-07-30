@@ -49,4 +49,8 @@ show(storage.count(db));
 show(storage.restore(db, backupPath)["ok"]);
 show(storage.count(db));
 show(storage.integrity(db)["value"]);
+storage.create(db, game("Metroid Prime Remastered", "Nintendo Switch", "Metroid", "Mundial", "Física e digital", "Novo", ""));
+var hybridStats << storage.stats(db)["summary"];
+show(hybridStats["physical"]);
+show(hybridStats["digital"]);
 show(storage.close(db));

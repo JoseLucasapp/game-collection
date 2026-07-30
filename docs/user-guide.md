@@ -45,11 +45,20 @@ Esc          fechar diálogos
 - preferências: pasta de configuração do sistema;
 - capas: permanecem no caminho escolhido e não são copiadas para o banco.
 
+## Recolher e expandir o menu
 
-## Menu lateral
-
-Use o botão `‹` no topo do formulário para recolher a barra lateral. O botão `›` reabre o formulário sem alterar os dados da coleção.
+O botão no início do header oculta completamente o formulário lateral. Quando o menu está fechado, a listagem passa a ocupar automaticamente toda a largura disponível. O mesmo botão permanece no header e permite reabrir o formulário a qualquer momento.
 
 ## Estatísticas visuais
 
-A janela Estatísticas apresenta um gráfico de pizza para a distribuição entre mídia física e digital, um gráfico de barras para as plataformas mais presentes e uma tabela com os valores exatos.
+No modal **Estatísticas**, o campo **Tipo de gráfico** permite alternar a visualização das principais plataformas entre:
+
+- Barras;
+- Pizza;
+- Linha.
+
+A tabela permanece ao lado do gráfico com os valores exatos. Quando a coleção não possui dados para o ranking, o aplicativo mostra uma mensagem única em vez de containers vazios.
+
+## Indicação visual de interação
+
+Botões, selects e demais ações exibem cursor de ponteiro. Inputs exibem cursor de texto, mudança de fundo ao receber foco e um caret vertical indicando a posição de digitação.

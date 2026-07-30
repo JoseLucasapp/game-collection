@@ -4,7 +4,7 @@
 
 Primeiro aplicativo desktop oficial criado com a linguagem Zumbra. Mantém uma biblioteca local de jogos em SQLite, sem conta, telemetria ou dependência de internet.
 
-## Recursos da versão 0.2.2
+## Recursos da versão 0.2.3
 
 - cadastro e edição de nome, plataforma, franquia, região, mídia, condição e capa local;
 - confirmação antes de excluir;
@@ -15,18 +15,19 @@ Primeiro aplicativo desktop oficial criado com a linguagem Zumbra. Mantém uma b
 - detecção de duplicatas durante importações;
 - backup e restauração SQLite com backup automático de segurança;
 - verificação de integridade do banco;
-- estatísticas locais com gráfico de pizza, gráfico de barras e tabela;
-- menu lateral recolhível e expansível;
+- estatísticas locais com seletor entre barras, pizza e linha, além de tabela;
+- menu lateral totalmente ocultável, com reflow responsivo e toggle permanente no header;
 - preferências persistentes de tema, ordenação e filtros;
 - temas claro e escuro;
 - atalhos de teclado, navegação por Tab e modais acessíveis;
+- cursor de ponteiro em ações e caret visível nos inputs;
 - listas com scroll interno e suporte a nomes longos;
 - notificações do sistema com fallback não fatal;
 - execução pela VM e por executável nativo C11.
 
 ## Requisitos
 
-- Zumbra 0.12.2 ou superior;
+- Zumbra 0.12.3 ou superior;
 - SQLite 3;
 - SDL3 e SDL3_ttf para a interface gráfica.
 

@@ -151,7 +151,7 @@ pub fct importOne(db, game) {
 pub fct stats(db) {
     var summary << database.queryOne(
         db,
-        "SELECT COUNT(*) AS total, COUNT(DISTINCT platform) AS platforms, COUNT(DISTINCT NULLIF(franchise, '')) AS franchises, COALESCE(SUM(CASE WHEN media = 'Física' THEN 1 ELSE 0 END), 0) AS physical, COALESCE(SUM(CASE WHEN media = 'Digital' THEN 1 ELSE 0 END), 0) AS digital, COALESCE(SUM(CASE WHEN cover_path <> '' THEN 1 ELSE 0 END), 0) AS covers FROM games",
+        "SELECT COUNT(*) AS total, COUNT(DISTINCT platform) AS platforms, COUNT(DISTINCT NULLIF(franchise, '')) AS franchises, COALESCE(SUM(CASE WHEN media = 'Física' OR media = 'Física e digital' THEN 1 ELSE 0 END), 0) AS physical, COALESCE(SUM(CASE WHEN media = 'Digital' OR media = 'Física e digital' THEN 1 ELSE 0 END), 0) AS digital, COALESCE(SUM(CASE WHEN cover_path <> '' THEN 1 ELSE 0 END), 0) AS covers FROM games",
         {}
     );
     var topPlatforms << database.query(

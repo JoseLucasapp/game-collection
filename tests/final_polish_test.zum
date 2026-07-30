@@ -1,0 +1,76 @@
+import "../vendor/zumbra/std/desktop.zum" as desktop;
+import "../vendor/zumbra/std/ui.zum" as ui;
+
+var application << desktop.app({"backend": "headless", "quitOnLastWindow": false});
+var window << application.window({"title": "Final polish", "width": 1000, "height": 600});
+var sidebarVisible << ui.boolState(true);
+var sidebarSize << ui.intState(350);
+var layoutGap << ui.intState(18);
+
+var sidebar << ui.navigation({
+    "id": "polish-sidebar",
+    "placement": "left",
+    "expandedSize": 350,
+    "border": true
+}, [ui.text("Formulário")]);
+ui.bind(sidebar, "visible", sidebarVisible);
+ui.bind(sidebar, "expandedSize", sidebarSize);
+
+var input << ui.input({"id": "polish-input", "value": "Final Fantasy IX", "cursor": "text", "height": 40});
+var toggle << ui.buttonWith({"id": "polish-toggle", "text": "", "icon": "menu", "cursor": "pointer", "width": 40, "height": 36});
+var content << ui.columnWith({"id": "polish-content", "grow": 1, "gap": 8}, [toggle, input]);
+var layout << ui.rowWith({"id": "polish-layout", "grow": 1, "gap": 18}, [sidebar, content]);
+ui.bind(layout, "gap", layoutGap);
+
+var chartType << ui.select({"id": "chart-type", "options": ["Barras", "Pizza", "Linha"], "value": "Barras", "width": 160, "height": 40});
+var chart << ui.chart({"id": "polish-chart", "height": 180});
+ui.barChart(chart, {"values": [2, 1], "labels": ["PS1", "PC"]});
+var close << ui.buttonWith({"id": "polish-close", "text": "", "icon": "close", "cursor": "pointer", "width": 38, "height": 36});
+var modal << ui.modal({"id": "polish-modal", "visible": true, "width": 600, "height": 420, "padding": 20, "overflow": "hidden"}, [
+    ui.columnWith({"grow": 1, "gap": 12}, [
+        ui.rowWith({"height": 40, "align": "center", "gap": 12}, [
+            ui.containerWith({"grow": 1}, [ui.text("Estatísticas")]),
+            close
+        ]),
+        chartType,
+        chart
+    ])
+]);
+
+var root << ui.containerWith({"grow": 1}, [layout, modal]);
+var context << ui.mount(application, window, root, {});
+
+fct itemById(items, id) {
+    for item in items {
+        if (item["id"] == id) { return item; }
+    }
+    {};
+}
+
+var items << ui.snapshot(context)["items"];
+var before << itemById(items, "polish-content");
+var modalItem << itemById(items, "polish-modal");
+var closeItem << itemById(items, "polish-close");
+show(before["x"]);
+show(before["width"]);
+show(closeItem["x"] + closeItem["width"] <= modalItem["x"] + modalItem["width"] - 19);
+show(sizeOf(ui.get(chartType, "options")));
+
+ui.clearChart(chart);
+ui.pieChart(chart, {"values": [2, 1], "labels": ["PS1", "PC"]});
+show(ui.get(chart, "commands")[0]["kind"]);
+
+ui.set(modal, "visible", false);
+show(context.focus(input));
+
+sidebarSize.set(0);
+layoutGap.set(0);
+sidebarVisible.set(false);
+items << ui.snapshot(context)["items"];
+var after << itemById(items, "polish-content");
+show(after["x"]);
+show(after["width"]);
+show(ui.get(sidebar, "visible"));
+
+context.close();
+application.close();
