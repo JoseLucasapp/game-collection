@@ -13,6 +13,7 @@ for source in \
   tests/preferences_test.zum \
   tests/modal_accessibility_test.zum \
   tests/dialog_layout_test.zum \
+  tests/navigation_charts_test.zum \
   tests/stress_test.zum \
   tests/ui_event_test.zum \
   tests/layout_test.zum; do
@@ -51,6 +52,20 @@ DIALOG_OUTPUT="$("$ZUMBRA_BIN" run tests/dialog_layout_test.zum)"
 DIALOG_EXPECTED=$'290\n140\n620\n520\nhidden\n6\ncontain'
 if [[ "$DIALOG_OUTPUT" != "$DIALOG_EXPECTED" ]]; then
   printf 'Unexpected dialog layout test output:\n%s\n' "$DIALOG_OUTPUT" >&2
+  exit 1
+fi
+
+
+NAVIGATION_OUTPUT="$("$ZUMBRA_BIN" run tests/navigation_charts_test.zum)"
+NAVIGATION_EXPECTED=$'280
+true
+2
+2
+56'
+if [[ "$NAVIGATION_OUTPUT" != "$NAVIGATION_EXPECTED" ]]; then
+  printf 'Unexpected navigation/charts test output:
+%s
+' "$NAVIGATION_OUTPUT" >&2
   exit 1
 fi
 
@@ -93,6 +108,7 @@ run_native_test exchange "$EXCHANGE_EXPECTED"
 run_native_test preferences "$PREFERENCES_EXPECTED"
 run_native_test modal_accessibility "$MODAL_EXPECTED"
 run_native_test dialog_layout "$DIALOG_EXPECTED"
+run_native_test navigation_charts "$NAVIGATION_EXPECTED"
 run_native_test stress "$STRESS_EXPECTED"
 run_native_test ui_event "$UI_EXPECTED"
 run_native_test layout "$LAYOUT_EXPECTED"

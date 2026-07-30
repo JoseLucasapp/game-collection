@@ -44,3 +44,12 @@ Esc          fechar diálogos
 - banco: pasta de dados do sistema;
 - preferências: pasta de configuração do sistema;
 - capas: permanecem no caminho escolhido e não são copiadas para o banco.
+
+
+## Menu lateral
+
+Use o botão `‹` no topo do formulário para recolher a barra lateral. O botão `›` reabre o formulário sem alterar os dados da coleção.
+
+## Estatísticas visuais
+
+A janela Estatísticas apresenta um gráfico de pizza para a distribuição entre mídia física e digital, um gráfico de barras para as plataformas mais presentes e uma tabela com os valores exatos.

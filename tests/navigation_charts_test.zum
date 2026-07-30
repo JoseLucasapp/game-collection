@@ -1,0 +1,54 @@
+import "../vendor/zumbra/std/desktop.zum" as desktop;
+import "../vendor/zumbra/std/ui.zum" as ui;
+
+var application << desktop.app({"backend": "headless", "quitOnLastWindow": false});
+var window << application.window({"title": "Navigation charts", "width": 1000, "height": 700});
+var collapsed << ui.boolState(false);
+var navigation << ui.navigation({
+    "id": "test-navigation",
+    "placement": "left",
+    "expandedSize": 280,
+    "collapsedSize": 56,
+    "collapsed": false,
+    "border": true
+}, [ui.text("Menu")]);
+ui.bind(navigation, "collapsed", collapsed);
+var chart << ui.chart({"id": "test-chart", "height": 180});
+ui.pieChart(chart, {"values": [3, 2], "labels": ["Física", "Digital"]});
+ui.barChart(chart, {"values": [4, 2], "labels": ["PS1", "PC"]});
+var table << ui.dataTable({"id": "test-table", "columns": ["Plataforma", "Jogos"], "rows": [["PS1", "4"], ["PC", "2"]], "height": 120});
+var close << ui.buttonWith({"id": "test-close", "text": "×", "width": 38, "height": 36});
+var modal << ui.modal({"id": "test-modal", "visible": true, "width": 600, "height": 420, "padding": 20}, [
+    ui.columnWith({"grow": 1}, [
+        ui.rowWith({"height": 40, "align": "center"}, [
+            ui.containerWith({"grow": 1, "height": 40}, [ui.text("Estatísticas")]),
+            close
+        ]),
+        chart,
+        table
+    ])
+]);
+var content << ui.containerWith({"grow": 1}, [ui.text("Conteúdo")]);
+var root << ui.containerWith({"grow": 1}, [ui.rowWith({"grow": 1}, [navigation, content]), modal]);
+var context << ui.mount(application, window, root, {});
+var items << ui.snapshot(context)["items"];
+var navItem << {};
+var modalItem << {};
+var closeItem << {};
+for item in items {
+    if (item["id"] == "test-navigation") { navItem << item; }
+    if (item["id"] == "test-modal") { modalItem << item; }
+    if (item["id"] == "test-close") { closeItem << item; }
+}
+show(navItem["width"]);
+show(closeItem["x"] > modalItem["x"] + modalItem["width"] - 80);
+show(sizeOf(ui.get(chart, "commands")));
+show(sizeOf(ui.get(table, "rows")));
+collapsed.set(true);
+items << ui.snapshot(context)["items"];
+for item in items {
+    if (item["id"] == "test-navigation") { navItem << item; }
+}
+show(navItem["width"]);
+context.close();
+application.close();

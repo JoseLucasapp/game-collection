@@ -7,7 +7,7 @@ import "preferences.zum" as preferences;
 var application << desktop.app({
     "backend": "auto",
     "name": "Minha Coleção de Jogos",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "identifier": "dev.zumbra.gamecollection",
     "quitOnLastWindow": true,
     "closeOnRequest": true
@@ -55,6 +55,9 @@ var dataModalState << ui.boolState(false);
 var restoreModalState << ui.boolState(false);
 var statsModalState << ui.boolState(false);
 var coverModalState << ui.boolState(false);
+var sidebarCollapsedState << ui.boolState(false);
+var sidebarExpandedVisibleState << ui.boolState(true);
+var sidebarCollapsedVisibleState << ui.boolState(false);
 var pendingDeleteId << ui.intState(0);
 var pendingDeleteName << ui.stringState("");
 var pendingRestorePath << ui.stringState("");
@@ -65,7 +68,6 @@ var statsPlatformCountState << ui.stringState("0");
 var statsFranchiseCountState << ui.stringState("0");
 var statsMediaState << ui.stringState("Física: 0 • Digital: 0");
 var statsCoverCountState << ui.stringState("0");
-var statsPlatformRowIds << [];
 
 var nameInput << ui.input({"id": "game-name", "placeholder": "Nome do jogo", "height": 40, "minHeight": 40, "accessibilityLabel": "Nome do jogo"});
 var platformInput << ui.input({"id": "game-platform", "placeholder": "Ex.: PlayStation 2", "height": 40, "minHeight": 40, "accessibilityLabel": "Plataforma"});
@@ -178,9 +180,10 @@ fct actionButton(id, text, eventName, width) {
 
 fct modalHeader(title, closeId, closeEvent) {
     ui.rowWith({"align": "center", "gap": 10, "height": 40, "minHeight": 40}, [
-        ui.textWith(title, {"fontSize": 22, "fontWeight": "bold"}),
-        ui.spacer(1),
-        actionButton(closeId, "X", closeEvent, 36)
+        ui.containerWith({"grow": 1, "height": 40, "minHeight": 40}, [
+            ui.textWith(title, {"fontSize": 22, "fontWeight": "bold", "height": 40, "minHeight": 40})
+        ]),
+        actionButton(closeId, "×", closeEvent, 38)
     ]);
 }
 
@@ -236,44 +239,58 @@ var editTargets << {};
 var deleteTargets << {};
 var coverTargets << {};
 
-var sidebar << ui.containerWith({
-    "id": "collection-sidebar",
-    "border": true,
-    "padding": 18,
-    "width": 350,
-    "minWidth": 350,
-    "maxWidth": 350,
-    "grow": 0
-}, [
-    ui.columnWith({"gap": 8, "grow": 1, "overflowY": "auto", "scrollStep": 64, "scrollbarWidth": 8, "paddingRight": 10}, [
-        ui.containerWith({"height": 34, "minHeight": 34}, [ui.textWith("Cadastrar jogo", {"fontSize": 21, "fontWeight": "bold"})]),
-        ui.containerWith({"height": 24, "minHeight": 24}, [ui.textWith("Adicione ou edite um item da coleção.", {"fontSize": 12, "color": "muted"})]),
-        ui.spacer(4),
-        label("Nome"), nameInput,
-        label("Plataforma"), platformInput,
-        label("Franquia"), franchiseInput,
-        label("Região"), regionInput,
-        label("Mídia"), mediaSelect,
-        label("Condição"), conditionSelect,
-        label("Capa local"),
-        ui.rowWith({"gap": 8, "height": 40, "minHeight": 40}, [coverPathInput, actionButton("select-cover", "Escolher", "collection_pick_cover", 78)]),
-        ui.spacer(4),
-        ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
-            actionButton("clear-game", "Limpar", "collection_clear", 144),
-            actionButton("save-game", "Salvar jogo", "collection_save", 144)
-        ]),
-        ui.containerWith({"border": true, "padding": 10, "height": 146, "minHeight": 146}, [
-            ui.columnWith({"gap": 5}, [
-                ui.textWith("Atalhos", {"fontSize": 13, "fontWeight": "bold"}),
-                ui.textWith("Ctrl+N  Novo • Ctrl+S  Salvar", {"fontSize": 12}),
-                ui.textWith("Ctrl+F  Buscar • Ctrl+D  Dados", {"fontSize": 12}),
-                ui.textWith("Ctrl+T  Estatísticas", {"fontSize": 12}),
-                ui.textWith("Tab / Shift+Tab  Navegar", {"fontSize": 12}),
-                ui.textWith("Esc  Fechar diálogo", {"fontSize": 12})
-            ])
+var expandedSidebarContent << ui.columnWith({"gap": 8, "grow": 1, "overflowY": "auto", "scrollStep": 64, "scrollbarWidth": 8, "paddingRight": 10}, [
+    ui.rowWith({"align": "center", "gap": 8, "height": 38, "minHeight": 38}, [
+        ui.containerWith({"grow": 1, "height": 38, "minHeight": 38}, [ui.textWith("Cadastrar jogo", {"fontSize": 21, "fontWeight": "bold"})]),
+        actionButton("collapse-sidebar", "‹", "collection_collapse_sidebar", 38)
+    ]),
+    ui.containerWith({"height": 24, "minHeight": 24}, [ui.textWith("Adicione ou edite um item da coleção.", {"fontSize": 12, "color": "muted"})]),
+    ui.spacer(4),
+    label("Nome"), nameInput,
+    label("Plataforma"), platformInput,
+    label("Franquia"), franchiseInput,
+    label("Região"), regionInput,
+    label("Mídia"), mediaSelect,
+    label("Condição"), conditionSelect,
+    label("Capa local"),
+    ui.rowWith({"gap": 8, "height": 40, "minHeight": 40}, [coverPathInput, actionButton("select-cover", "Escolher", "collection_pick_cover", 88)]),
+    ui.spacer(4),
+    ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
+        actionButton("clear-game", "Limpar", "collection_clear", 139),
+        actionButton("save-game", "Salvar jogo", "collection_save", 149)
+    ]),
+    ui.containerWith({"border": true, "padding": 10, "height": 146, "minHeight": 146}, [
+        ui.columnWith({"gap": 5}, [
+            ui.textWith("Atalhos", {"fontSize": 13, "fontWeight": "bold"}),
+            ui.textWith("Ctrl+N  Novo • Ctrl+S  Salvar", {"fontSize": 12}),
+            ui.textWith("Ctrl+F  Buscar • Ctrl+D  Dados", {"fontSize": 12}),
+            ui.textWith("Ctrl+T  Estatísticas", {"fontSize": 12}),
+            ui.textWith("Tab / Shift+Tab  Navegar", {"fontSize": 12}),
+            ui.textWith("Esc  Fechar diálogo", {"fontSize": 12})
         ])
     ])
 ]);
+var collapsedSidebarContent << ui.columnWith({"align": "center", "gap": 12, "grow": 1}, [
+    actionButton("expand-sidebar", "›", "collection_expand_sidebar", 38),
+    ui.containerWith({"height": 120, "minHeight": 120, "align": "center"}, [
+        ui.textWith("Jogos", {"fontSize": 13, "fontWeight": "bold"})
+    ])
+]);
+ui.bind(expandedSidebarContent, "visible", sidebarExpandedVisibleState);
+ui.bind(collapsedSidebarContent, "visible", sidebarCollapsedVisibleState);
+
+var sidebar << ui.navigation({
+    "id": "collection-sidebar",
+    "placement": "left",
+    "border": true,
+    "padding": 18,
+    "expandedSize": 350,
+    "collapsedSize": 64,
+    "collapsed": false,
+    "grow": 0,
+    "overflow": "hidden"
+}, [expandedSidebarContent, collapsedSidebarContent]);
+ui.bind(sidebar, "collapsed", sidebarCollapsedState);
 
 var collectionPanel << ui.columnWith({"id": "collection-content", "gap": 10, "grow": 1}, [
     ui.rowWith({"align": "center", "gap": 12, "height": 44, "minHeight": 44}, [
@@ -287,7 +304,7 @@ var collectionPanel << ui.columnWith({"id": "collection-content", "gap": 10, "gr
         franchiseFilterSelect,
         ui.spacer(1),
         actionButton("collection-data", "Dados", "collection_open_data", 76),
-        actionButton("collection-stats", "Estatísticas", "collection_open_stats", 104)
+        actionButton("collection-stats", "Estatísticas", "collection_open_stats", 114)
     ]),
     ui.containerWith({"border": true, "padding": 12, "grow": 1, "minHeight": 260}, [gameList]),
     ui.rowWith({"align": "center", "gap": 8, "height": 28, "minHeight": 28}, [
@@ -297,7 +314,17 @@ var collectionPanel << ui.columnWith({"id": "collection-content", "gap": 10, "gr
     ])
 ]);
 
-var statsPlatformsList << ui.columnWith({"id": "stats-platform-list", "gap": 6, "grow": 1}, []);
+var statsMediaChart << ui.chart({"id": "stats-media-chart", "height": 190, "minHeight": 190, "background": "transparent", "accessibilityLabel": "Gráfico de mídia física e digital"});
+var statsPlatformChart << ui.chart({"id": "stats-platform-chart", "height": 220, "minHeight": 220, "background": "transparent", "accessibilityLabel": "Gráfico das principais plataformas"});
+var statsPlatformTable << ui.dataTable({
+    "id": "stats-platform-table",
+    "columns": ["Plataforma", "Jogos"],
+    "rows": [],
+    "rowHeight": 34,
+    "grow": 1,
+    "minHeight": 180,
+    "accessibilityLabel": "Tabela das principais plataformas"
+});
 
 var deleteModal << ui.modal({
     "id": "delete-modal",
@@ -325,7 +352,7 @@ ui.bind(deleteModal, "visible", deleteModalState);
 var dataModal << ui.modal({
     "id": "data-modal",
     "visible": false,
-    "width": 600,
+    "width": 650,
     "height": 450,
     "padding": 20,
     "overflow": "hidden",
@@ -336,18 +363,18 @@ var dataModal << ui.modal({
         ui.textWith("Transfira sua coleção ou proteja o banco SQLite local.", {"fontSize": 13, "color": "muted"}),
         label("JSON versionado"),
         ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
-            actionButton("export-json", "Exportar JSON", "collection_export_json", 132),
-            actionButton("import-json", "Importar JSON", "collection_import_json", 132)
+            actionButton("export-json", "Exportar JSON", "collection_export_json", 146),
+            actionButton("import-json", "Importar JSON", "collection_import_json", 146)
         ]),
         label("CSV"),
         ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
-            actionButton("export-csv", "Exportar CSV", "collection_export_csv", 132),
-            actionButton("import-csv", "Importar CSV", "collection_import_csv", 132)
+            actionButton("export-csv", "Exportar CSV", "collection_export_csv", 146),
+            actionButton("import-csv", "Importar CSV", "collection_import_csv", 146)
         ]),
         label("Banco SQLite"),
         ui.rowWith({"gap": 10, "height": 40, "minHeight": 40}, [
-            actionButton("backup-db", "Criar backup", "collection_backup", 132),
-            actionButton("restore-db", "Restaurar backup", "collection_choose_restore", 132)
+            actionButton("backup-db", "Criar backup", "collection_backup", 146),
+            actionButton("restore-db", "Restaurar backup", "collection_choose_restore", 154)
         ])
     ])
 ]);
@@ -379,25 +406,31 @@ ui.bind(restoreModal, "visible", restoreModalState);
 var statsModal << ui.modal({
     "id": "stats-modal",
     "visible": false,
-    "width": 620,
-    "height": 520,
+    "width": 820,
+    "height": 680,
     "padding": 20,
     "overflow": "hidden",
     "accessibilityLabel": "Estatísticas da coleção"
 }, [
     ui.columnWith({"gap": 12, "grow": 1}, [
         modalHeader("Estatísticas", "close-stats-x", "collection_close_stats"),
-        ui.containerWith({"border": true, "padding": 12, "height": 180, "minHeight": 180}, [
-            ui.columnWith({"gap": 4, "grow": 1}, [
-                statRow("Total de jogos", statsTotalText),
-                statRow("Plataformas", statsPlatformCountText),
-                statRow("Franquias", statsFranchiseCountText),
-                statRow("Mídia", statsMediaText),
-                statRow("Capas locais", statsCoverCountText)
+        ui.rowWith({"gap": 12, "height": 210, "minHeight": 210}, [
+            ui.containerWith({"border": true, "padding": 10, "width": 390, "minWidth": 390}, [statsMediaChart]),
+            ui.containerWith({"border": true, "padding": 12, "grow": 1}, [
+                ui.columnWith({"gap": 4, "grow": 1}, [
+                    statRow("Total de jogos", statsTotalText),
+                    statRow("Plataformas", statsPlatformCountText),
+                    statRow("Franquias", statsFranchiseCountText),
+                    statRow("Mídia", statsMediaText),
+                    statRow("Capas locais", statsCoverCountText)
+                ])
             ])
         ]),
         label("Principais plataformas"),
-        ui.containerWith({"border": true, "padding": 10, "grow": 1, "minHeight": 150}, [statsPlatformsList])
+        ui.rowWith({"gap": 12, "grow": 1, "minHeight": 260}, [
+            ui.containerWith({"border": true, "padding": 10, "grow": 1, "minWidth": 360}, [statsPlatformChart]),
+            ui.containerWith({"border": true, "padding": 0, "width": 330, "minWidth": 330}, [statsPlatformTable])
+        ])
     ])
 ]);
 ui.bind(statsModal, "visible", statsModalState);
@@ -598,9 +631,9 @@ var refreshCollection << fct(event) {
                 ui.textWith(game["platform"] + " • " + franchiseLabel, {"fontSize": 13, "color": "muted", "height": 20, "minHeight": 20}),
                 ui.textWith(details, {"fontSize": 12, "color": "muted", "height": 20, "minHeight": 20})
             ]),
-            ui.buttonWith({"id": coverId, "text": "Capa", "visible": sizeOf(game["cover_path"]) > 0, "width": 64, "minWidth": 64, "height": 36, "minHeight": 36, "onClick": openCover, "accessibilityLabel": "Abrir capa de " + game["name"]}),
-            ui.buttonWith({"id": editId, "text": "Editar", "width": 68, "minWidth": 68, "height": 36, "minHeight": 36, "onClick": editGame, "accessibilityLabel": "Editar " + game["name"]}),
-            ui.buttonWith({"id": deleteId, "text": "Excluir", "width": 68, "minWidth": 68, "height": 36, "minHeight": 36, "danger": true, "onClick": askDeleteGame, "accessibilityLabel": "Excluir " + game["name"]})
+            ui.buttonWith({"id": coverId, "text": "Capa", "visible": sizeOf(game["cover_path"]) > 0, "width": 72, "minWidth": 72, "height": 36, "minHeight": 36, "onClick": openCover, "accessibilityLabel": "Abrir capa de " + game["name"]}),
+            ui.buttonWith({"id": editId, "text": "Editar", "width": 76, "minWidth": 76, "height": 36, "minHeight": 36, "onClick": editGame, "accessibilityLabel": "Editar " + game["name"]}),
+            ui.buttonWith({"id": deleteId, "text": "Excluir", "width": 76, "minWidth": 76, "height": 36, "minHeight": 36, "danger": true, "onClick": askDeleteGame, "accessibilityLabel": "Excluir " + game["name"]})
         ]);
 
         ui.add(gameList, ui.containerWith({
@@ -622,6 +655,19 @@ var refreshCollection << fct(event) {
     }
 };
 
+application.on("collection_collapse_sidebar", fct(event) {
+    event;
+    sidebarCollapsedState.set(true);
+    sidebarExpandedVisibleState.set(false);
+    sidebarCollapsedVisibleState.set(true);
+});
+application.on("collection_expand_sidebar", fct(event) {
+    event;
+    sidebarCollapsedState.set(false);
+    sidebarExpandedVisibleState.set(true);
+    sidebarCollapsedVisibleState.set(false);
+    context.focus(nameInput);
+});
 application.on("collection_clear", fct(event) { event; clearForm(); });
 application.on("collection_save", fct(event) { event; saveGame(); });
 application.on("collection_pick_cover", fct(event) {
@@ -641,25 +687,32 @@ application.on("collection_open_stats", fct(event) {
     statsMediaState.set("Física: " + toString(summary["physical"]) + " • Digital: " + toString(summary["digital"]));
     statsCoverCountState.set(toString(summary["covers"]));
 
-    for rowId in statsPlatformRowIds { ui.remove(statsPlatformsList, rowId); }
-    statsPlatformRowIds << [];
-    if (sizeOf(result["top_platforms"]) == 0) {
-        var emptyId << "stats-platform-empty";
-        addToArrayEnd(statsPlatformRowIds, emptyId);
-        ui.add(statsPlatformsList, ui.containerWith({"id": emptyId, "height": 30, "minHeight": 30}, [ui.text("Nenhum jogo cadastrado")]));
-    } else {
-        var rank << 1;
-        for row in result["top_platforms"] {
-            var rowId << "stats-platform-" + toString(rank);
-            addToArrayEnd(statsPlatformRowIds, rowId);
-            ui.add(statsPlatformsList, ui.rowWith({"id": rowId, "align": "center", "height": 30, "minHeight": 30}, [
-                ui.textWith(toString(rank) + ". " + row["platform"], {"fontSize": 13}),
-                ui.spacer(1),
-                ui.textWith(toString(row["total"]), {"fontSize": 13, "fontWeight": "bold"})
-            ]));
-            rank << rank + 1;
-        }
+    ui.clearChart(statsMediaChart);
+    ui.pieChart(statsMediaChart, {
+        "values": [summary["physical"], summary["digital"]],
+        "labels": ["Física", "Digital"],
+        "colors": ["#3867e8", "#e89b38"],
+        "legend": true,
+        "fontSize": 12
+    });
+
+    var topValues << [];
+    var topLabels << [];
+    var tableRows << [];
+    for row in result["top_platforms"] {
+        addToArrayEnd(topValues, row["total"]);
+        addToArrayEnd(topLabels, row["platform"]);
+        addToArrayEnd(tableRows, [row["platform"], toString(row["total"])]);
     }
+    ui.clearChart(statsPlatformChart);
+    ui.barChart(statsPlatformChart, {
+        "values": topValues,
+        "labels": topLabels,
+        "colors": ["#3867e8", "#42a56b", "#e89b38", "#9b59b6", "#e05260"],
+        "fontSize": 10,
+        "gap": 10
+    });
+    ui.set(statsPlatformTable, "rows", tableRows);
     statsModalState.set(true);
     context.focus(ui.find(context, "close-stats-x"));
 });
