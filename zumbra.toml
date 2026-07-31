@@ -1,6 +1,6 @@
 [app]
 name = "Minha Coleção de Jogos"
-version = "0.2.10"
+version = "0.2.12"
 identifier = "dev.zumbra.gamecollection"
 entry = "src/main.zum"
 icon = "assets/icon.png"
