@@ -4,7 +4,7 @@
 
 Primeiro aplicativo desktop oficial criado com a linguagem Zumbra. Mantém uma biblioteca local de jogos em SQLite, sem conta, telemetria ou dependência de internet.
 
-## Recursos da versão 0.2.9
+## Recursos da versão 0.2.10
 
 - cadastro e edição de nome, plataforma, franquia, região, mídia, condição, valor, nota, link, descrição e capa local;
 - confirmação antes de excluir;
@@ -29,7 +29,7 @@ Primeiro aplicativo desktop oficial criado com a linguagem Zumbra. Mantém uma b
 
 ## Requisitos
 
-- Zumbra 0.12.9 ou superior;
+- Zumbra 0.12.10 ou superior;
 - SQLite 3;
 - SDL3 e SDL3_ttf para a interface gráfica.
 
@@ -79,6 +79,10 @@ Jogos com capa exibem uma miniatura quadrada no lado esquerdo do card. **Ver mai
 ## 0.2.8 — native idle CPU fix
 
 This release rebuilds the application on Zumbra 0.12.8. The native C11 runtime now stops non-blocking event drains at the SDL3 poll sentinel, preventing `.deb`, AppImage and native bundle builds from spinning at high CPU while idle.
+
+## 0.2.10 — clipping de controles
+
+Esta versão atualiza a baseline para Zumbra 0.12.10. Botões parcialmente ocultos pela rolagem não exibem mais seus textos fora do viewport, e placeholders/valores de inputs permanecem dentro dos limites do controle. Não houve alteração de schema, migrations, JSON ou CSV.
 
 ## 0.2.9 — native rendering performance
 
